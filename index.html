@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nightjar — trade FXRP without showing your hand</title>
+<meta name="description" content="An on-chain venue where your order stays encrypted until it is matched. The privacy an OTC desk sells, without the desk. Live on Flare Coston2.">
+<link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:Geist;src:url(fonts/Geist-Variable.woff2)format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:GeistMono;src:url(fonts/GeistMono-Variable.woff2)format("woff2");font-weight:100 900;font-display:swap}
+
+:root{
+  --void:#060709; --bg:#08090c; --panel:#0e1014; --panel2:#12151a; --raise:#171a20;
+  --line:#1f232b; --hair:#171a21;
+  --text:#edece6; --muted:#8a8f99; --dim:#5b606b; --faint:#3a3f49;
+  --amber:#f0a868; --amber-dim:#2a1d12; --amber-line:#45301c;
+  --jade:#6fd6a8; --jade-dim:#0f241c; --jade-line:#1d3d31;
+  --red:#ff7a6b;
+  --sans:Geist,ui-sans-serif,-apple-system,"Segoe UI",sans-serif;
+  --mono:GeistMono,ui-monospace,"SF Mono",Menlo,monospace;
+  --r:10px; --rs:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  font-size:15px;line-height:1.55;letter-spacing:-.006em;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(120% 70% at 50% -10%,rgba(255,255,255,.035),transparent 60%)}
+main{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 26px 90px;
+  display:flex;flex-direction:column}
+a{color:var(--text);text-decoration-color:var(--faint);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--muted)}
+
+h1{margin:0;font-size:clamp(32px,6vw,58px);line-height:1.02;letter-spacing:-.042em;font-weight:560;text-wrap:balance}
+h2{margin:0;font-size:clamp(20px,3vw,27px);line-height:1.14;letter-spacing:-.032em;font-weight:560;text-wrap:balance}
+h3{margin:0;font-size:15px;font-weight:560;letter-spacing:-.018em}
+p{margin:0}
+.lede{font-size:18px;line-height:1.5;color:var(--muted);max-width:58ch;letter-spacing:-.012em}
+.body{color:var(--muted);font-size:14.5px;line-height:1.6;max-width:64ch}
+.small{color:var(--muted);font-size:13.5px;line-height:1.55}
+.tiny{color:var(--dim);font-size:12px}
+.eyebrow{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.2em;color:var(--dim)}
+.label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--dim)}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+header.top{padding:80px 0 56px}
+section{padding:56px 0;border-top:1px solid var(--hair)}
+.stack{display:flex;flex-direction:column}
+.g8{gap:8px}.g12{gap:12px}.g14{gap:14px}.g20{gap:20px}.g24{gap:24px}.g32{gap:32px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(290px,.9fr);gap:52px;align-items:center}
+@media(max-width:900px){.hero{grid-template-columns:1fr;gap:36px}}
+
+.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+  border-radius:var(--r);overflow:hidden}
+.panel .pad{padding:16px;display:flex;flex-direction:column;gap:12px}
+.panel .head{padding:12px 16px;border-bottom:1px solid var(--hair);display:flex;
+  align-items:center;justify-content:space-between;gap:12px;background:rgba(255,255,255,.012)}
+
+.plate{background:var(--void);border:1px solid var(--line);border-radius:var(--rs);
+  padding:14px 16px;display:flex;flex-direction:column;gap:12px;transition:border-color .35s ease}
+.plate.exposed{border-color:var(--amber-line)}
+.plate.sealed{border-color:var(--jade-line)}
+.readout{font-family:var(--mono);font-size:12.5px;line-height:1.95}
+.readout .k{color:var(--faint)}
+.readout .v{color:var(--amber);transition:color .35s ease}
+.plate.sealed .readout .v{color:var(--jade)}
+.cipher{font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--faint);
+  word-break:break-all;opacity:.35;transition:color .35s ease,opacity .35s ease}
+.plate.sealed .cipher{color:var(--jade);opacity:.85}
+.rule{height:1px;background:var(--hair);border:0;margin:0}
+
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
+  text-transform:uppercase;letter-spacing:.14em;padding:5px 10px;border-radius:999px;
+  background:var(--raise);color:var(--muted);border:1px solid var(--line)}
+.pill.sealed{background:var(--jade-dim);color:var(--jade);border-color:var(--jade-line)}
+.pill.exposed{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-line)}
+.dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--rs);
+  padding:13px 15px;display:flex;flex-direction:column;gap:4px}
+.tile .k{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.16em;color:var(--dim)}
+.tile .v{font-family:var(--mono);font-size:19px;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.tile .sub{font-size:11.5px;color:var(--faint)}
+.amber{color:var(--amber)} .jade{color:var(--jade)}
+
+.vs{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.dl{display:flex;flex-direction:column}
+.dl>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+  padding:8px 0;border-bottom:1px solid var(--hair)}
+.dl>div:last-child{border-bottom:none}
+dt{color:var(--muted);font-size:13px}
+dd{margin:0;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;
+  text-align:right;word-break:break-all}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--hair);white-space:nowrap}
+th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.16em;color:var(--dim);font-weight:500}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.scrollx{overflow-x:auto}
+pre{margin:0;background:var(--void);border:1px solid var(--line);border-radius:var(--rs);
+  padding:15px;overflow-x:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.7}
+.note{border:1px solid var(--line);border-left:2px solid var(--faint);background:var(--panel);
+  border-radius:0 var(--rs) var(--rs) 0;padding:13px 16px;font-size:13.5px;color:var(--muted)}
+.note strong{color:var(--text);font-weight:540}
+.note.jade{border-left-color:var(--jade);background:var(--jade-dim);color:#cfe8dd}
+.note.jade strong{color:var(--jade)}
+.big{font-family:var(--mono);font-size:clamp(44px,10vw,76px);line-height:1;font-weight:600;
+  letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.steps{list-style:none;margin:0;padding:0}
+.steps li{display:grid;grid-template-columns:54px 1fr;gap:18px;padding:18px 0;border-top:1px solid var(--hair)}
+.steps li:last-child{border-bottom:1px solid var(--hair)}
+.steps .n{color:var(--faint);font-family:var(--mono);font-size:12px;letter-spacing:.1em;padding-top:2px}
+footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+</style>
+</head>
+<body>
+<main>
+
+<header class="top">
+  <div class="hero">
+    <div class="stack g24">
+      <p class="eyebrow">Flare Confidential Compute</p>
+      <h1>Trade FXRP without<br>showing your hand.</h1>
+      <p class="lede">Put a large order on any public book and you have announced it. Your price
+        and your size are readable before you trade, and you get a worse fill. Nightjar keeps
+        your order encrypted until the moment it is matched.</p>
+      <p class="small" style="max-width:42ch">It is the privacy an OTC desk sells, without the
+        desk — atomic on-chain settlement, and no counterparty who learns your position.</p>
+      <p class="tiny">Live on Flare Coston2 against real FAssets FXRP. Every number on this page
+        is read from the chain by your browser.</p>
+    </div>
+
+    <div class="plate exposed" id="demo">
+      <div class="between">
+        <span class="label" id="demoLabel">what a public book puts on-chain</span>
+        <span class="pill exposed" id="demoPill"><span class="dot"></span><span id="demoState">exposed</span></span>
+      </div>
+      <div class="readout" id="demoTerms"></div>
+      <hr class="rule">
+      <div class="cipher" id="demoCipher">—</div>
+      <p class="tiny" id="demoCaption" style="min-height:3.4em"></p>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="stack g32">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">What visibility costs</p>
+      <h2>We measured it, on-chain, both ways.</h2>
+      <p class="body">We deployed an ordinary on-chain limit order book as a control and ran the
+        identical trade through both venues. On the transparent one the seller called a public
+        view function, read that the buyer would pay up to 1.06, and asked exactly that instead
+        of the 1.02 he would have accepted. No mempool games, no searcher infrastructure —
+        reading public state was enough.</p>
+    </div>
+    <div class="big" id="bps">— bps</div>
+    <p class="body" style="margin-top:-8px">is what the transparent venue cost the buyer, against
+      the sealed one. Same buyer, same seller, same size.</p>
+  </div>
+</section>
+
+<section>
+  <div class="vs">
+    <div class="panel">
+      <div class="head"><span class="label" style="color:var(--amber)">control · transparent book</span></div>
+      <div class="pad">
+        <p class="small">A live <code>getOrder()</code> call. Anyone can make it. Right now it returns:</p>
+        <div class="plate exposed"><div class="readout" id="leaked">reading Coston2…</div></div>
+        <p class="small">Knowing she would pay up to <strong>1.06</strong>, the seller asked exactly
+          that instead of the <strong>1.02</strong> he would have accepted.</p>
+        <a class="tiny" id="takeLink" target="_blank" rel="noreferrer">the fill →</a>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="head"><span class="label" style="color:var(--jade)">nightjar · sealed</span></div>
+      <div class="pad">
+        <p class="small">The same intent, submitted here. The entire payload is
+          <span id="ctlen">…</span> of ciphertext:</p>
+        <div class="plate sealed"><div class="cipher" id="ciphertext" style="opacity:.85">reading Coston2…</div></div>
+        <p class="small">No side, no price, no size. Only the enclave holds what opens it. The
+          batch cleared at <strong id="clearInline">—</strong>.</p>
+        <a class="tiny" id="sealLink" target="_blank" rel="noreferrer">the sealed order →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="stack g20">
+    <p class="eyebrow">The trade, both ways</p>
+    <div class="panel scrollx">
+      <table>
+        <thead><tr><th>Venue</th><th>Her limit</th><th>Executed at</th><th>She paid</th></tr></thead>
+        <tbody>
+          <tr><td>Transparent book</td><td class="n" id="tlimit">—</td><td class="n amber" id="tprice">—</td><td class="n" id="tpaid">—</td></tr>
+          <tr><td>Nightjar</td><td class="n" id="nlimit">—</td><td class="n jade" id="nprice">—</td><td class="n" id="npaid">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">Every fill in a batch executes at one clearing price, so being early or
+      ordered favourably in a block is worth nothing, and there is nothing to sandwich.</p>
+  </div>
+</section>
+
+<section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">Who this is for</p>
+      <h2>The people who currently pick up the phone.</h2>
+      <p class="body">When someone wants to move real size in crypto today, they do not use a DEX.
+        They message an OTC desk, take a private quote, and settle bilaterally. That entire
+        industry exists for one reason: public books leak intentions. This is what a desk sells,
+        with atomic on-chain settlement and no counterparty who learns your position.</p>
+    </div>
+    <div class="panel scrollx">
+      <table>
+        <thead><tr><th>Who</th><th>What breaks today</th></tr></thead>
+        <tbody>
+          <tr><td>Desks moving size</td><td>Split across thirty fills and you are still detected</td></tr>
+          <tr><td>Market makers</td><td>Quoting real size means being adversely selected for it</td></tr>
+          <tr><td>Treasuries and funds</td><td>Cannot rebalance without broadcasting the position</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">Not for someone swapping 50 FXRP — too small to be worth anyone&rsquo;s
+      attention, and an ordinary DEX serves them fine. This is infrastructure for size.</p>
+  </div>
+</section>
+
+<section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">The business</p>
+      <h2>Five basis points, and only on volume it matches.</h2>
+      <p class="body">The trader keeps roughly <span id="bpskeep" class="mono">—</span>; the venue
+        takes <span id="feeline" class="mono">—</span> of matched notional. An order that never
+        matches is free, which is the right incentive for a venue whose whole promise is that you
+        can rest size without consequence. The ceiling is fixed in the bytecode and governance
+        cannot raise it, so depositing does not mean trusting the owner not to change the deal.</p>
+    </div>
+    <div class="panel"><div class="pad"><dl class="dl">
+      <div><dt>Protocol fee</dt><dd id="feebps">—</dd></div>
+      <div><dt>Ceiling, unraisable</dt><dd id="maxfee">—</dd></div>
+      <div><dt>Fee on an unmatched order</dt><dd class="jade">zero</dd></div>
+      <div><dt>Collected to date</dt><dd id="collected">—</dd></div>
+    </dl></div></div>
+  </div>
+</section>
+
+<section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">How it works</p>
+      <h2>Sealed in your browser. Matched in an enclave. Settled on-chain.</h2>
+    </div>
+    <ol class="steps">
+      <li><span class="n">01</span><div class="stack g8"><h3>Deposit</h3><p class="small">Fund a
+        balance, decoupled in time from any order. If you funded the exact size of each trade, the
+        transfer itself would leak it.</p></div></li>
+      <li><span class="n">02</span><div class="stack g8"><h3>Seal</h3><p class="small">Your order
+        is encrypted to the enclave&rsquo;s public key before it leaves the browser. The venue
+        stores ciphertext and one public number — how many orders are in the batch.</p></div></li>
+      <li><span class="n">03</span><div class="stack g8"><h3>Clear</h3><p class="small">The enclave
+        opens the book, finds the single price that matches the most volume, and signs the result.
+        Everyone in the batch trades at that one price.</p></div></li>
+      <li><span class="n">04</span><div class="stack g8"><h3>Settle</h3><p class="small">The
+        contract checks the signature, re-reads the FTSO feed to bound the price itself, and
+        requires both assets to net to zero before it moves anything.</p></div></li>
+    </ol>
+    <div class="note jade"><strong>The enclave is not something new to trust.</strong> It never
+      holds your funds — it returns signed balance deltas, and the contract rejects them unless
+      both assets net to exactly zero and the clearing price sits inside a band around Flare's own
+      FTSO feed, re-read on-chain at settlement. A valid enclave signature is necessary, and
+      deliberately not sufficient. The enclave proposes; the chain disposes.</div>
+  </div>
+</section>
+
+<section>
+  <div class="stack g20">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">History</p>
+      <h2>Every batch this venue has settled.</h2>
+      <p class="body">Read straight from contract storage rather than an event scan — the public
+        Coston2 RPC caps <code>eth_getLogs</code> at 30 blocks, so a venue that wants its history
+        to be readable has to keep it as state. Note what is recorded: batch-level aggregates
+        only. There is no per-order slot to read.</p>
+    </div>
+    <div class="panel scrollx">
+      <table>
+        <thead><tr><th>Batch</th><th>Cleared at</th><th>Matched</th><th>Orders</th><th>Fee</th></tr></thead>
+        <tbody id="history"><tr><td colspan="5" class="tiny">reading Coston2…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="stack g20">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">Verify</p>
+      <h2>None of this depends on us.</h2>
+    </div>
+    <div class="panel"><div class="pad"><dl class="dl">
+      <div><dt>Batch</dt><dd id="batch">—</dd></div>
+      <div><dt>Settled on-chain</dt><dd id="settled">—</dd></div>
+      <div><dt>Clearing price</dt><dd id="price">—</dd></div>
+      <div><dt>Matched</dt><dd id="matched">—</dd></div>
+      <div><dt>Orders in batch <span class="tiny">(only public stat)</span></dt><dd id="count">—</dd></div>
+      <div><dt>Signed by TEE</dt><dd id="tee">—</dd></div>
+      <div><dt>Bound to chain / venue</dt><dd id="binding">—</dd></div>
+    </dl></div></div>
+    <pre id="cmds">loading…</pre>
+  </div>
+</section>
+
+<footer>
+  <span><a href="https://github.com/issa-me-sush/nightjar-flare">source</a> · real FAssets FXRP on
+    Coston2 · nUSD stands in for USD₮0</span>
+  <span id="asof">—</span>
+</footer>
+
+</main>
+
+<script>
+const RPC="https://coston2-api.flare.network/ext/C/rpc";
+const EXPLORER="https://coston2-explorer.flare.network";
+const NIGHTJAR="0x6A4bD49dFd510b25F984D12dB8eDA86e2F525271";
+const TRANSPARENT="0xD2Ce3f06E446Cf967eEC4F3D6fdBB0063be44456";
+const ORDER_TX="0xc13a4d7ec7e9b0b7fb8fdb7e45db0ccb539985886992a4cbe9dd9cf2336212c3";
+const SETTLE_TX="0xd07ed8dd8cc797d43117f3fbb9ce1ea72c4d7e76b03b69bc8923d4729a6294b1";
+const TAKE_TX="0xad0e484997e838748fb9d48a155adb007a3b908bc36ffa45aa04d761ba5d44e6";
+const BATCH=1n, LEAKED_ORDER=1n;
+
+// selectors from `cast sig`, so this page needs no crypto library
+const SEL={batchSettled:"0x7cf716dc",batchOrderCount:"0x5f9df644",teeAddress:"0x78b9e620",
+  getOrder:"0xcdf9d07c",currentBatchId:"0x0a763da1",batches:"0x8232e389",feeBps:"0x24a9d853",maxFeeBps:"0xd55be8c6",feesCollected:"0xf071db5a"};
+
+let _id=0;
+async function rpc(method,params){
+  const r=await fetch(RPC,{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({jsonrpc:"2.0",id:++_id,method,params})});
+  const b=await r.json(); if(b.error)throw new Error(b.error.message); return b.result;
+}
+const pad=a=>a.replace(/^0x/,"").toLowerCase().padStart(64,"0");
+const call=(to,data)=>rpc("eth_call",[{to,data},"latest"]);
+const word=(h,i)=>h.slice(2+i*64,2+(i+1)*64);
+const toBig=w=>BigInt("0x"+w);
+const toAddr=w=>"0x"+w.slice(24);
+function readBytesArg(input,slot){
+  const body=input.slice(10);
+  const off=Number(BigInt("0x"+body.slice(slot*64,(slot+1)*64)))*2;
+  const len=Number(BigInt("0x"+body.slice(off,off+64)));
+  return "0x"+body.slice(off+64,off+64+len*2);
+}
+const amount=(v,p=4)=>{const u=10n**6n;return `${v/u}.${(v%u).toString().padStart(6,"0").slice(0,p)}`};
+const price=(v,p=2)=>{const u=10n**18n;return `${v/u}.${(v%u).toString().padStart(18,"0").slice(0,p)}`};
+const set=(id,html)=>{const n=document.getElementById(id);if(n)n.innerHTML=html};
+const link=(h,l)=>`<a href="${EXPLORER}/tx/${h}" target="_blank" rel="noreferrer">${l}</a>`;
+
+/* ── the hero: an order being sealed ─────────────────────────────────── */
+const HEX="0123456789abcdef";
+const rand=n=>{let s="";for(let i=0;i<n;i++)s+=HEX[Math.random()*16|0];return s};
+const TERMS=[["trader","0xcb46cD10dE…"],["side","BUY"],["limit","1.06"],["size","3.000000 FXRP"]];
+const dissolve=(t,p)=>{
+  if(p<=0)return t;
+  if(p>=1)return rand(t.length);
+  const cut=Math.floor(t.length*p);
+  return rand(cut)+t.slice(cut);
+};
+const nbsp=s=>s.replace(/ /g,"&nbsp;");
+
+function paintTerms(p){
+  set("demoTerms",TERMS.map(([k,v])=>
+    `<div><span class="k">${nbsp(k.padEnd(7," "))}</span><span class="v">${dissolve(v,p)}</span></div>`
+  ).join(""));
+}
+
+function runDemo(){
+  const plate=document.getElementById("demo");
+  const pill=document.getElementById("demoPill");
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    plate.className="plate sealed"; pill.className="pill sealed";
+    paintTerms(1);
+    set("demoState","sealed"); set("demoLabel","what Nightjar puts on-chain");
+    set("demoCipher","0x04"+rand(300)+"…");
+    set("demoCaption","241 bytes. No side, no price, no size.");
+    return;
+  }
+  const cycle=()=>{
+    plate.className="plate exposed"; pill.className="pill exposed";
+    set("demoState","exposed"); set("demoLabel","what a public book puts on-chain");
+    set("demoCipher","—");
+    set("demoCaption","Side, limit and size, readable by anyone who calls a view function. That is what the counterparty prices against.");
+    paintTerms(0);
+
+    setTimeout(()=>{
+      const start=performance.now(), DUR=900;
+      const step=t=>{
+        const p=Math.min(1,(t-start)/DUR);
+        paintTerms(p);
+        set("demoCipher","0x04"+rand(300)+"…");
+        if(p<1)requestAnimationFrame(step);
+        else{
+          plate.className="plate sealed"; pill.className="pill sealed";
+          set("demoState","sealed"); set("demoLabel","what Nightjar puts on-chain");
+          set("demoCaption","241 bytes. No side, no price, no size — and if it never trades, these terms are destroyed inside the enclave and never published at all.");
+          setTimeout(cycle,3600);
+        }
+      };
+      requestAnimationFrame(step);
+    },1900);
+  };
+  cycle();
+}
+
+/* ── live chain reads ────────────────────────────────────────────────── */
+async function main(){
+  runDemo();
+  try{
+    const raw=await call(TRANSPARENT,SEL.getOrder+pad("0x"+LEAKED_ORDER.toString(16)));
+    const oTrader=toAddr(word(raw,0)),oSide=toBig(word(raw,1)),oLimit=toBig(word(raw,2)),oSize=toBig(word(raw,3));
+    set("leaked",
+      `<div><span class="k">${nbsp("trader ")}</span><span class="v">${oTrader.slice(0,14)}…</span></div>`+
+      `<div><span class="k">${nbsp("side   ")}</span><span class="v">${oSide===0n?"BUY":"SELL"}</span></div>`+
+      `<div><span class="k">${nbsp("limit  ")}</span><span class="v">${price(oLimit)}</span></div>`+
+      `<div><span class="k">${nbsp("size   ")}</span><span class="v">${amount(oSize)} FXRP</span></div>`);
+
+    const tx=await rpc("eth_getTransactionByHash",[ORDER_TX]);
+    const ct=readBytesArg(tx.input,0);
+    set("ciphertext",ct);
+    set("ctlen",`${(ct.length-2)/2} bytes`);
+
+    const stx=await rpc("eth_getTransactionByHash",[SETTLE_TX]);
+    const s=readBytesArg(stx.input,0);
+    const chainId=toBig(word(s,0)),venue=toAddr(word(s,1)),batchId=toBig(word(s,2));
+    const clearing=toBig(word(s,3)),matched=toBig(word(s,4));
+
+    const paidT=(oSize*oLimit)/10n**18n, paidN=(matched*clearing)/10n**18n;
+    const bps=((paidT-paidN)*10000n)/paidN;
+
+    set("bps",`${bps} bps`);
+    set("bpskeep",`${bps} bps`);
+    set("clearInline",price(clearing));
+    set("tlimit",`${price(oLimit)} <span class="tiny">public</span>`);
+    set("nlimit",`${price(oLimit)} <span class="tiny">sealed</span>`);
+    set("tprice",price(oLimit)); set("tpaid",`${amount(paidT)} nUSD`);
+    set("nprice",price(clearing)); set("npaid",`${amount(paidN)} nUSD`);
+    set("batch",batchId.toString());
+    set("price",price(clearing,4));
+    set("matched",`${amount(matched)} FXRP`);
+    set("binding",`chain ${chainId} / ${venue.slice(0,10)}…`);
+    document.getElementById("takeLink").href=`${EXPLORER}/tx/${TAKE_TX}`;
+    document.getElementById("sealLink").href=`${EXPLORER}/tx/${ORDER_TX}`;
+
+    const [st,cnt,tee,f,mf,coll]=await Promise.all([
+      call(NIGHTJAR,SEL.batchSettled+pad("0x"+BATCH.toString(16))),
+      call(NIGHTJAR,SEL.batchOrderCount+pad("0x"+BATCH.toString(16))),
+      call(NIGHTJAR,SEL.teeAddress), call(NIGHTJAR,SEL.feeBps),
+      call(NIGHTJAR,SEL.maxFeeBps), call(NIGHTJAR,SEL.feesCollected)]);
+
+    set("settled",toBig(word(st,0))===1n
+      ?`<span class="pill sealed">yes</span> ${link(SETTLE_TX,"tx")}`
+      :`<span style="color:var(--red)">no</span>`);
+    set("count",toBig(word(cnt,0)).toString());
+    set("tee",toAddr(word(tee,0)));
+    const feeBps=toBig(word(f,0));
+    set("feebps",`${feeBps} bps of matched notional`);
+    set("feeline",`${feeBps} bps`);
+    set("maxfee",`${toBig(word(mf,0))} bps`);
+    set("collected",`${amount(toBig(word(coll,0)))} nUSD`);
+
+    set("cmds",`# the transparent venue hands you her limit price
+cast call ${TRANSPARENT} \\
+  "getOrder(uint64)((address,uint8,uint256,uint256,bool))" 1 \\
+  --rpc-url ${RPC}
+
+# the sealed one hands you ${(ct.length-2)/2} bytes of ciphertext
+cast tx ${ORDER_TX} --rpc-url ${RPC}
+
+# and the batch really is settled
+cast call ${NIGHTJAR} "batchSettled(uint64)(bool)" 1 --rpc-url ${RPC}`);
+
+    // history, straight from storage
+    const cur=toBig(word(await call(NIGHTJAR,SEL.currentBatchId),0));
+    const ids=[]; for(let i=Number(cur)-1;i>=1&&ids.length<8;i--)ids.push(i);
+    if(ids.length){
+      const rows=await Promise.all(ids.map(i=>call(NIGHTJAR,SEL.batches+pad("0x"+i.toString(16)))));
+      document.getElementById("history").innerHTML=rows.map((r,n)=>{
+        const cp=toBig(word(r,0)),mb=toBig(word(r,1)),fee=toBig(word(r,2)),oc=toBig(word(r,5));
+        return `<tr><td class="n">#${ids[n]}</td>`+
+          `<td class="n">${cp===0n?'<span class="tiny">abandoned</span>':price(cp,4)}</td>`+
+          `<td class="n">${amount(mb)}</td><td class="n">${oc}</td>`+
+          `<td class="n">${amount(fee,6)}</td></tr>`;
+      }).join("");
+    } else {
+      document.getElementById("history").innerHTML='<tr><td colspan="5" class="tiny">No batches settled yet.</td></tr>';
+    }
+
+    set("asof","read live · "+new Date().toUTCString());
+  }catch(e){
+    set("leaked",`<span style="color:var(--red)">Could not reach Coston2: ${e.message}</span>`);
+  }
+}
+main();
+</script>
+</body>
+</html>
