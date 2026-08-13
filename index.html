@@ -149,6 +149,41 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
 <section>
   <div class="stack g32">
     <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">The problem · read live from Flare mainnet</p>
+      <h2>FXRP has a float, and almost nothing to sell it into.</h2>
+      <p class="body">These figures are fetched from Flare mainnet when you open this page — not
+        from a dashboard, and not typed in by hand. Every address is linked, so any line can be
+        checked independently.</p>
+    </div>
+    <div class="big" id="exitpct">— %</div>
+    <p class="body" style="margin-top:-8px">of FXRP&rsquo;s float has stablecoin waiting on the
+      other side of the trade. <span class="mono" id="fxrpsupply">—</span> outstanding;
+      <span class="mono" id="exitdepth">—</span> to sell into. If one holder in a hundred wanted
+      out at once, there is no price at which they all get out.</p>
+
+    <div class="panel">
+      <div class="head"><span class="label">Where the float sits</span>
+        <span class="pill" id="parkedpill">—</span></div>
+      <div class="pad">
+        <dl class="dl" id="parked"><div><dt>reading Flare mainnet…</dt><dd>—</dd></div></dl>
+        <p class="tiny">The four largest holders of FXRP are a yield vault, two lending markets,
+          and the bridge that carries it off Flare. Not one of them puts a price on the screen.
+          The fourth-largest holder of FXRP is the adapter taking it somewhere else.</p>
+      </div>
+    </div>
+
+    <p class="body">Incentives have already been tried at scale — Flare committed billions of FLR
+      to bringing liquidity to FXRP — and the float responded by sitting in vaults or leaving.
+      Rented liquidity leaves when the rent stops, because the reason it was never there was not
+      the yield. Resting real size on a public book means publishing your intention before it
+      fills, so the people with size rationally do not show up. That is the one thing a smart
+      contract cannot fix, because on-chain state is public by construction.</p>
+  </div>
+</section>
+
+<section>
+  <div class="stack g32">
+    <div class="stack g14" style="max-width:44rem">
       <p class="eyebrow">What visibility costs</p>
       <h2>We measured it, on-chain, both ways.</h2>
       <p class="body">We deployed an ordinary on-chain limit order book as a control and ran the
@@ -280,6 +315,84 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
 </section>
 
 <section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">What the chain never learned</p>
+      <h2>Five orders in. Three of them the chain has never seen.</h2>
+      <p class="body">A crossing pair proves the plumbing. This is the product: a market maker
+        rested a two-sided ladder, a taker crossed one rung, and the rest stayed where it was.
+        The venue recorded a clearing price, a matched volume and two net deltas — and nothing
+        whatsoever about the orders that did not trade.</p>
+    </div>
+    <div class="panel">
+      <div class="head"><span class="label">batch 2, on Coston2</span>
+        <span class="pill sealed" id="dhiddenpill">—</span></div>
+      <div class="pad">
+        <div class="scrollx"><table>
+          <thead><tr><th>Order</th><th>Submitted as</th><th>What the chain holds</th></tr></thead>
+          <tbody>
+            <tr><td>maker BUY 1.0 @ 0.99</td><td class="n">ciphertext</td><td class="n jade">nothing</td></tr>
+            <tr><td>maker BUY 1.0 @ 1.01</td><td class="n">ciphertext</td><td class="n">a net delta</td></tr>
+            <tr><td>maker SELL 1.0 @ 1.03</td><td class="n">ciphertext</td><td class="n jade">nothing</td></tr>
+            <tr><td>maker SELL 1.0 @ 1.05</td><td class="n">ciphertext</td><td class="n jade">nothing</td></tr>
+            <tr><td>taker SELL 1.0 @ 1.00</td><td class="n">ciphertext</td><td class="n">a net delta</td></tr>
+          </tbody>
+        </table></div>
+        <dl class="dl">
+          <div><dt>Orders resting <span class="tiny">(the only public stat)</span></dt><dd id="dorders">—</dd></div>
+          <div><dt>Cleared at</dt><dd id="dprice">—</dd></div>
+          <div><dt>Matched</dt><dd id="dmatched">—</dd></div>
+          <div><dt>Traders filled</dt><dd id="dfills">—</dd></div>
+          <div><dt>Never revealed</dt><dd class="jade" id="dhidden">—</dd></div>
+        </dl>
+        <p class="tiny">The rows marked <span class="jade">nothing</span> are the whole argument.
+          On a transparent book each of them would be a public quote, readable by anyone deciding
+          what to charge you next. <a id="depthLink" target="_blank" rel="noreferrer">settlement transaction →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">The design</p>
+      <h2>A batch auction is the only rule that survives more than one enclave.</h2>
+      <p class="body">The obvious way to build this is a normal price-time-priority order book
+        inside a secure enclave. It works, and it costs you the ability to ever run a second one.
+        Price-time priority is a function of arrival order: two enclaves fed the same orders over
+        a network see them in different sequences, produce different matches, and sign different
+        settlements. There is nothing for them to agree on.</p>
+      <p class="body">A uniform-price batch auction has no such dependency. It consumes a
+        <em>set</em> of orders and returns the single price that matches the most volume — feed it
+        the same set in any order and every enclave emits identical bytes. So the venue can
+        require <strong>k independent enclaves to sign the same settlement</strong> before the
+        chain will execute it, and the contract enforces that they are distinct and registered.</p>
+    </div>
+    <div class="panel">
+      <div class="head"><span class="label">Enclave quorum, from the venue</span>
+        <span class="pill" id="quorum">—</span></div>
+      <div class="pad">
+        <dl class="dl">
+          <div><dt>Registered enclaves</dt><dd id="qsigners">—</dd></div>
+          <div><dt>Signatures required</dt><dd id="qthreshold">—</dd></div>
+          <div><dt>Contract enforces</dt><dd class="jade">distinct · registered · strictly increasing</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="note jade">
+      <strong>This matters more than it did two years ago.</strong> Public research in 2025
+      demonstrated sub-$1,000 memory-bus attacks that forge TEE attestations on both major
+      vendors, who treat physical interposition as out of scope with no fix planned. A venue
+      resting on exactly one machine now has a cheap, known, unpatched single point of failure.
+      We have not solved TEE security — we chose the matching rule that lets you defend against
+      it. Stated plainly: the quorum path is deployed and covered by six tests, and Coston2 runs
+      one enclave today because a second needs a second host.
+    </div>
+  </div>
+</section>
+
+<section>
   <div class="stack g20">
     <div class="stack g14" style="max-width:44rem">
       <p class="eyebrow">History</p>
@@ -328,16 +441,38 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
 <script>
 const RPC="https://coston2-api.flare.network/ext/C/rpc";
 const EXPLORER="https://coston2-explorer.flare.network";
-const NIGHTJAR="0x6A4bD49dFd510b25F984D12dB8eDA86e2F525271";
+const NIGHTJAR="0x035703A55912C2274DCcb78C95FA658C174ad468";
 const TRANSPARENT="0xD2Ce3f06E446Cf967eEC4F3D6fdBB0063be44456";
-const ORDER_TX="0xc13a4d7ec7e9b0b7fb8fdb7e45db0ccb539985886992a4cbe9dd9cf2336212c3";
-const SETTLE_TX="0xd07ed8dd8cc797d43117f3fbb9ce1ea72c4d7e76b03b69bc8923d4729a6294b1";
-const TAKE_TX="0xad0e484997e838748fb9d48a155adb007a3b908bc36ffa45aa04d761ba5d44e6";
-const BATCH=1n, LEAKED_ORDER=1n;
+const ORDER_TX="0x0740423f20a27fa4d55930257451ce25b34e59e33ce059c982b5b23da2b06786";
+const SETTLE_TX="0x6cd81a3b88ca2ff06c38780c4b8557ec45b901080fe45dea95eeaa7d46e6be47";
+const TAKE_TX="0xb87f6b7c9918cb4fcf1e8a19773af0ad748e6faefce2ba6ea1b587e83958cb5c";
+const DEPTH_SETTLE_TX="0xb5418b6d77ce64952cd78022d951feb480eca8f5f3a25026852b7881a3735fa8";
+const BATCH=1n, LEAKED_ORDER=2n, DEPTH_BATCH=2n;
+
+// Flare mainnet, for the liquidity measurement. FXRP resolved from the FAssets
+// asset manager, not copied from a docs page.
+const MAINNET_RPC="https://flare-api.flare.network/ext/C/rpc";
+const FXRP="0xAd552A648C74D49E10027AB8a618A3ad4901c5bE";
+const PARKED=[
+  ["0x4C18Ff3C89632c3Dd62E796c0aFA5c07c4c1B2b3","Firelight vault","deposited for yield, not quoted"],
+  ["0xF4346F5132e810f80a28487a79c7559d9797E8B0","Morpho","lending collateral"],
+  ["0xD1b7A5eFa9bd88F291F7A4563a8f6185c0249CB3","Kinetic","lending collateral"],
+  ["0xd70659a6396285BF7214d7Ea9673184e7C72E07E","LayerZero OFT adapter","bridged off Flare"],
+];
+// The FXRP/USD₮0 pools — the only places a holder can actually leave.
+const EXITS=[
+  "0x927485d88a66253c63Af9163dca5f21c25A57393",
+  "0x686f53F0950Ef193C887527eC027E6A574A4DbE1",
+  "0x88D46717b16619B37fa2DfD2F038DEFB4459F1F7",
+];
+const USDT0="0xe7cd86e13AC4309349F30B3435a9d337750fC82D";
 
 // selectors from `cast sig`, so this page needs no crypto library
 const SEL={batchSettled:"0x7cf716dc",batchOrderCount:"0x5f9df644",teeAddress:"0x78b9e620",
-  getOrder:"0xcdf9d07c",currentBatchId:"0x0a763da1",batches:"0x8232e389",feeBps:"0x24a9d853",maxFeeBps:"0xd55be8c6",feesCollected:"0xf071db5a"};
+  getOrder:"0xcdf9d07c",currentBatchId:"0x0a763da1",batches:"0x8232e389",feeBps:"0x24a9d853",
+  maxFeeBps:"0xd55be8c6",feesCollected:"0xf071db5a",
+  totalSupply:"0x18160ddd",balanceOf:"0x70a08231",
+  signatureThreshold:"0xa82f2e26",teeSignerCount:"0x3a3d7dbe"};
 
 let _id=0;
 async function rpc(method,params){
@@ -357,6 +492,9 @@ function readBytesArg(input,slot){
   return "0x"+body.slice(off+64,off+64+len*2);
 }
 const amount=(v,p=4)=>{const u=10n**6n;return `${v/u}.${(v%u).toString().padStart(6,"0").slice(0,p)}`};
+// whole units with thousands separators — the mainnet figures are large enough
+// that the fractional part is noise
+const whole=v=>(v/10n**6n).toLocaleString("en-US");
 const price=(v,p=2)=>{const u=10n**18n;return `${v/u}.${(v%u).toString().padStart(18,"0").slice(0,p)}`};
 const set=(id,html)=>{const n=document.getElementById(id);if(n)n.innerHTML=html};
 const link=(h,l)=>`<a href="${EXPLORER}/tx/${h}" target="_blank" rel="noreferrer">${l}</a>`;
@@ -475,14 +613,14 @@ async function main(){
 
     set("cmds",`# the transparent venue hands you her limit price
 cast call ${TRANSPARENT} \\
-  "getOrder(uint64)((address,uint8,uint256,uint256,bool))" 1 \\
+  "getOrder(uint64)((address,uint8,uint256,uint256,bool))" ${LEAKED_ORDER} \\
   --rpc-url ${RPC}
 
 # the sealed one hands you ${(ct.length-2)/2} bytes of ciphertext
 cast tx ${ORDER_TX} --rpc-url ${RPC}
 
 # and the batch really is settled
-cast call ${NIGHTJAR} "batchSettled(uint64)(bool)" 1 --rpc-url ${RPC}`);
+cast call ${NIGHTJAR} "batchSettled(uint64)(bool)" ${BATCH} --rpc-url ${RPC}`);
 
     // history, straight from storage
     const cur=toBig(word(await call(NIGHTJAR,SEL.currentBatchId),0));
@@ -500,10 +638,67 @@ cast call ${NIGHTJAR} "batchSettled(uint64)(bool)" 1 --rpc-url ${RPC}`);
       document.getElementById("history").innerHTML='<tr><td colspan="5" class="tiny">No batches settled yet.</td></tr>';
     }
 
+    // the quorum, from the venue itself
+    const [thr,scount]=await Promise.all([
+      call(NIGHTJAR,SEL.signatureThreshold), call(NIGHTJAR,SEL.teeSignerCount)]);
+    set("quorum",`${toBig(word(thr,0))} of ${toBig(word(scount,0))}`);
+    set("qsigners",toBig(word(scount,0)).toString());
+    set("qthreshold",toBig(word(thr,0)).toString());
+
+    // batch 2: a ladder, most of which never traded
+    const dep=await call(NIGHTJAR,SEL.batches+pad("0x"+DEPTH_BATCH.toString(16)));
+    const dcnt=await call(NIGHTJAR,SEL.batchOrderCount+pad("0x"+DEPTH_BATCH.toString(16)));
+    const dPrice=toBig(word(dep,0)), dMatched=toBig(word(dep,1));
+    const dFills=toBig(word(dep,4)), dOrders=toBig(word(dcnt,0));
+    set("dorders",dOrders.toString());
+    set("dprice",price(dPrice,4));
+    set("dmatched",`${amount(dMatched)} FXRP`);
+    set("dfills",dFills.toString());
+    set("dhidden",`${dOrders-dFills} orders — side, price and size destroyed in the enclave`);
+    set("dhiddenpill",`${dOrders-dFills} never revealed`);
+    document.getElementById("depthLink").href=`${EXPLORER}/tx/${DEPTH_SETTLE_TX}`;
+
     set("asof","read live · "+new Date().toUTCString());
   }catch(e){
     set("leaked",`<span style="color:var(--red)">Could not reach Coston2: ${e.message}</span>`);
   }
+  // Flare mainnet runs on its own RPC and its own failure mode: if it is
+  // unreachable the Coston2 evidence above is unaffected, so it gets its own try.
+  try{ await mainnet(); }catch(e){
+    set("parked",`<div><dt style="color:var(--red)">Could not reach Flare mainnet</dt><dd>${e.message}</dd></div>`);
+  }
+}
+
+/* ── the liquidity measurement, off Flare mainnet ─────────────────────── */
+async function mainnet(){
+  const mrpc=async(to,data)=>{
+    const r=await fetch(MAINNET_RPC,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({jsonrpc:"2.0",id:++_id,method:"eth_call",params:[{to,data},"latest"]})});
+    const b=await r.json(); if(b.error)throw new Error(b.error.message); return b.result;
+  };
+  const bal=(token,who)=>mrpc(token,SEL.balanceOf+pad(who));
+  const MEXPLORER="https://flare-explorer.flare.network";
+
+  const supply=toBig(word(await mrpc(FXRP,SEL.totalSupply),0));
+  const held=await Promise.all(PARKED.map(p=>bal(FXRP,p[0])));
+  const exits=await Promise.all(EXITS.map(p=>bal(USDT0,p)));
+
+  let parkedTotal=0n; const rows=[];
+  PARKED.forEach((p,i)=>{
+    const v=toBig(word(held[i],0)); parkedTotal+=v;
+    rows.push(`<div><dt><a href="${MEXPLORER}/address/${p[0]}" target="_blank" rel="noreferrer">${p[1]}</a>`+
+      ` <span class="tiny">${p[2]}</span></dt>`+
+      `<dd>${whole(v)} · ${(Number(v*10000n/supply)/100).toFixed(2)}%</dd></div>`);
+  });
+  rows.push(`<div><dt><strong>four contracts</strong></dt>`+
+    `<dd class="amber">${whole(parkedTotal)} · ${(Number(parkedTotal*10000n/supply)/100).toFixed(2)}%</dd></div>`);
+  set("parked",rows.join(""));
+  set("parkedpill",`${(Number(parkedTotal*10000n/supply)/100).toFixed(0)}% parked`);
+
+  const exitDepth=exits.reduce((a,e)=>a+toBig(word(e,0)),0n);
+  set("fxrpsupply",`${whole(supply)} FXRP`);
+  set("exitdepth",whole(exitDepth));
+  set("exitpct",`${(Number(exitDepth*10000n/supply)/100).toFixed(2)}%`);
 }
 main();
 </script>
