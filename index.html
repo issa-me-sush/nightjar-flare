@@ -444,6 +444,65 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
 <section>
   <div class="stack g24">
     <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">Getting in</p>
+      <h2>Pay XRP on the XRP Ledger. The payment is what funds you here.</h2>
+      <p class="body">The fourth-largest holder of FXRP is the bridge taking it off Flare. So the
+        venue has a second door: send XRP from whatever XRPL wallet you already use, naming the
+        Flare address to credit in the payment reference. Flare's Data Connector attests the
+        payment, and the gateway verifies that proof on-chain before crediting anything —
+        priced at Flare's own FTSO feed.</p>
+    </div>
+
+    <ol class="steps">
+      <li><span class="n">01</span><div class="stack g8"><h3>Pay on the XRPL</h3>
+        <p class="small">To the desk's account, with your Flare address as the payment
+          reference. No Flare wallet needed, and no FLR.</p></div></li>
+      <li><span class="n">02</span><div class="stack g8"><h3>Flare attests it</h3>
+        <p class="small">The Data Connector's validators confirm the payment settled and
+          publish a Merkle root for the voting round.</p></div></li>
+      <li><span class="n">03</span><div class="stack g8"><h3>The gateway verifies the proof</h3>
+        <p class="small">It checks the proof against that root, that the payment reached the
+          desk's account, that the ledger transaction succeeded, and that it has not already
+          been claimed. Only then does anything move.</p></div></li>
+      <li><span class="n">04</span><div class="stack g8"><h3>Seal an order</h3>
+        <p class="small">The credited balance goes straight into a sealed batch. Arriving from
+          the XRPL and trading without showing your hand is one path, not two products.</p></div></li>
+    </ol>
+
+    <div class="panel">
+      <div class="head"><span class="label">Run against real XRPL testnet payments</span>
+        <span class="pill sealed"><span class="dot"></span>live</span></div>
+      <div class="pad">
+        <div class="scrollx"><table>
+          <thead><tr><th>Paid on the XRP Ledger</th><th>Credited on Flare</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="n"><a href="https://testnet.xrpl.org/transactions/7C68E09EDA054D708A808DD18DC50AC9019313D6C01797F31F53958BB13047DA" target="_blank" rel="noreferrer">12 XRP</a></td>
+              <td class="n jade"><a href="https://coston2-explorer.flare.network/tx/0xe09d510e776810c1243bdb13a6c36f43a7a0f40f18862f6e106896aa28985ec8" target="_blank" rel="noreferrer">0xe09d510e…</a></td>
+            </tr>
+            <tr>
+              <td class="n"><a href="https://testnet.xrpl.org/transactions/7FE5394C9CA826B7F861AD9BF1F484CAC4D790AEA9DAFBB2C98773ED991BBA11" target="_blank" rel="noreferrer">25 XRP</a></td>
+              <td class="n jade"><a href="https://coston2-explorer.flare.network/tx/0x1f0a145bf13ab3187fcc691212863adf06e13059b8593491e273e2f49b7f9695" target="_blank" rel="noreferrer">0x1f0a145b…</a></td>
+            </tr>
+          </tbody>
+        </table></div>
+        <dl class="dl">
+          <div><dt>XRP credited so far</dt><dd class="jade" id="gwDrops">—</dd></div>
+          <div><dt>Gateway still able to honour</dt><dd id="gwCapacity">—</dd></div>
+          <div><dt>Gateway contract</dt><dd><a href="https://coston2-explorer.flare.network/address/0xd905e4A9E8c0A7f5c8c61db91a41B72B2203eD12" target="_blank" rel="noreferrer">0xd905e4A9…</a></dd></div>
+        </dl>
+        <p class="tiny">The gateway never holds the XRP and cannot credit anyone without a proof
+          Flare's own validators produced. 18 tests cover the ways it could otherwise be
+          drained — replay, a payment to somebody else's account, a failed ledger transaction,
+          a proof about another chain, and a payment naming nobody.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
       <p class="eyebrow">The design</p>
       <h2>A batch auction is the only rule that survives more than one enclave.</h2>
       <p class="body">The obvious way to build this is a normal price-time-priority order book
@@ -554,13 +613,16 @@ const EXITS=[
   "0x88D46717b16619B37fa2DfD2F038DEFB4459F1F7",
 ];
 const USDT0="0xe7cd86e13AC4309349F30B3435a9d337750fC82D";
+// The XRPL rail on Coston2.
+const GATEWAY="0xd905e4A9E8c0A7f5c8c61db91a41B72B2203eD12";
 
 // selectors from `cast sig`, so this page needs no crypto library
 const SEL={batchSettled:"0x7cf716dc",batchOrderCount:"0x5f9df644",teeAddress:"0x78b9e620",
   getOrder:"0xcdf9d07c",currentBatchId:"0x0a763da1",batches:"0x8232e389",feeBps:"0x24a9d853",
   maxFeeBps:"0xd55be8c6",feesCollected:"0xf071db5a",
   totalSupply:"0x18160ddd",balanceOf:"0x70a08231",
-  signatureThreshold:"0xa82f2e26",teeSignerCount:"0x3a3d7dbe"};
+  signatureThreshold:"0xa82f2e26",teeSignerCount:"0x3a3d7dbe",
+  totalDropsCredited:"0xd4f900f1",remainingCapacityDrops:"0xcfeef214"};
 
 let _id=0;
 async function rpc(method,params){
@@ -796,6 +858,12 @@ cast call ${NIGHTJAR} "batchSettled(uint64)(bool)" ${BATCH} --rpc-url ${RPC}`);
     set("dhidden",`${dOrders-dFills} orders — side, price and size destroyed in the enclave`);
     set("dhiddenpill",`${dOrders-dFills} never revealed`);
     document.getElementById("depthLink").href=`${EXPLORER}/tx/${DEPTH_SETTLE_TX}`;
+
+    // the XRPL rail
+    const [drops,cap]=await Promise.all([
+      call(GATEWAY,SEL.totalDropsCredited), call(GATEWAY,SEL.remainingCapacityDrops)]);
+    set("gwDrops",`${amount(toBig(word(drops,0)),2)} XRP`);
+    set("gwCapacity",`${amount(toBig(word(cap,0)),2)} XRP`);
 
     set("asof","read live · "+new Date().toUTCString());
   }catch(e){
