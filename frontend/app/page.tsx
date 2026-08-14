@@ -4,9 +4,9 @@ import { SealDemo } from "./seal-demo";
 import { BASE_SYMBOL, QUOTE_SYMBOL, VENUE, EXTENSION_ID, coston2 } from "@/lib/config";
 
 export const metadata = {
-  title: "Nightjar — trade FXRP without showing your hand",
+  title: "Nightjar — a dark pool for FXRP on Flare",
   description:
-    "An on-chain venue where your order stays encrypted until it is matched. The privacy an OTC desk sells, without the desk.",
+    "Exchanges keep your order secret from your counterparty. On-chain books do not. Nightjar puts the matching engine inside a Flare Confidential Compute enclave, and the chain audits what it returns.",
 };
 
 const EXPLORER = coston2.blockExplorers.default.url;
@@ -67,20 +67,22 @@ export default function Landing() {
           className="hero"
         >
           <div className="stack" style={{ gap: 26 }}>
-            <p className="eyebrow">Flare Confidential Compute</p>
+            <p className="eyebrow">A dark pool for FXRP · Flare Confidential Compute</p>
             <h1>
-              Trade FXRP without
+              Exchanges keep your order
               <br />
-              showing your hand.
+              secret. On-chain books don&rsquo;t.
             </h1>
             <p className="lede">
-              Put a large order on any public book and you have announced it. Your price and
-              your size are readable before you trade, and you get a worse fill. Nightjar
-              keeps your order encrypted until the moment it is matched.
+              Send an order to any exchange and the exchange sees it while your counterparty
+              does not. That is how markets have worked for decades. Put the matching engine
+              on a public chain and the property disappears: your limit price becomes
+              readable by the person about to trade against you.
             </p>
-            <p className="small" style={{ maxWidth: "42ch" }}>
-              It is the privacy an OTC desk sells, without the desk — atomic on-chain
-              settlement, and no counterparty who learns your position.
+            <p className="small" style={{ maxWidth: "44ch" }}>
+              Nightjar puts the matching engine inside a Flare Confidential Compute enclave
+              and gets it back. The difference from a desk is that nobody has to be trusted:
+              the chain audits what the engine returns instead of believing it.
             </p>
             <div className="row gap12 wrapf">
               <Link href="/trade">
@@ -96,6 +98,37 @@ export default function Landing() {
         </section>
 
         {/* ── the sheet ────────────────────────────────────────────────── */}
+
+        <Sheet label="How it trades" sub="the obvious question first">
+          <div className="stack gap24">
+            <h2>Hidden from your counterparty. Not hidden from the engine.</h2>
+            <p className="body">
+              The enclave sees every order in full: side, price, size. It matches them the way
+              any exchange&rsquo;s matching engine does. Nobody trades blind and nothing is
+              guessed. What changes is that the book is not broadcast, which is the normal
+              arrangement everywhere except on-chain.
+            </p>
+            <div className="ledger">
+              <Row k="01 · You submit" v="a limit order, as anywhere" />
+              <Row k="02 · Others submit" v="theirs, in the same batch" />
+              <Row k="03 · The engine clears" v="one price, the most volume" />
+              <Row k="04 · Everyone trades" v={<span className="sealed">at that one price</span>} />
+            </div>
+            <p className="body">
+              You state your real limit because you never pay it. You pay the clearing price,
+              so honesty is the profitable move rather than the expensive one. Batch auctions
+              are not exotic either: NASDAQ and NYSE run one at every open and close, and
+              those are the deepest moments of the trading day.
+            </p>
+            <div className="note">
+              <strong>Two costs, stated plainly.</strong> You wait for the batch rather than
+              trading instantly, and you cannot read the book before committing. If you are
+              swapping fifty {BASE_SYMBOL} that is friction with no benefit, and an ordinary
+              DEX serves you better. If you are moving five hundred thousand, thirty seconds
+              is nothing against announcing yourself.
+            </div>
+          </div>
+        </Sheet>
 
         <Sheet label="The problem" sub="read from Flare mainnet">
           <div className="stack gap32">
@@ -125,11 +158,11 @@ export default function Landing() {
             </div>
 
             <p className="body">
-              Incentives have already been tried at scale, and the float responded by sitting
-              in vaults or leaving. Rented liquidity leaves when the rent stops, because the
-              reason it was never there was not the yield. Resting real size on a public book
-              means publishing your intention before it fills — so the people with size
-              rationally do not show up.
+              This is why the venue is aimed at FXRP rather than at trading in general.
+              Incentives were already tried at scale and the float responded by sitting in
+              vaults or leaving, which suggests the missing ingredient was never the yield.
+              Lending markets on Flare take FXRP as collateral, and a liquidation that has to
+              sell into this much depth is priced on an assumption that is not true.
             </p>
 
             <div className="row gap12 wrapf">
@@ -284,21 +317,33 @@ export default function Landing() {
           </div>
         </Sheet>
 
-        <Sheet label="Why Flare" sub="the liquidity problem">
+        <Sheet label="What this is" sub="and what it is not">
           <div className="stack gap24">
-            <h2>You cannot buy the liquidity that hides from you.</h2>
+            <h2>A dark pool, on a chain that checks its work.</h2>
             <p className="body">
-              Flare has committed billions of FLR to bringing liquidity to FXRP. But the deepest
-              liquidity — resting institutional size — is not absent for want of incentives. It is
-              absent because resting size on a transparent book means revealing it, and the people
-              with size respond rationally by not showing up. Incentives rent liquidity. Removing
-              the reason to hide is how you earn it.
+              Dark pools are ordinary infrastructure. Institutions have used them for decades
+              because moving size on a lit book moves the price against you. The cost has
+              always been that a dark pool has an operator who sees everything, which is why
+              they are licensed and audited rather than trusted.
             </p>
             <p className="body">
-              That is the one problem a smart contract cannot solve, because on-chain state is
-              public by construction. It needs confidential execution — which Flare shipped, and
-              which its own roadmap names dark pools and sealed-bid auctions as the reason for.
+              Confidential venues on-chain are not new either. Several exist, and Flare&rsquo;s
+              own team has written a confidential order book. What is different here is
+              narrower and worth stating exactly:
             </p>
+            <div className="ledger">
+              <Row k="No operator to trust" v="the chain re-checks the engine" />
+              <Row k="Order-independent matching" v="so more than one enclave is possible" />
+              <Row k="One clearing price" v={<span className="sealed">nothing to gain by being first</span>} />
+              <Row k="Funded from the XRP Ledger" v="a Data Connector proof, not a bridge" />
+            </div>
+            <div className="note">
+              <strong>What this does not do.</strong> It does not create liquidity. It removes
+              a specific cost from providing it: today, quoting real size publicly is how you
+              get picked off, and an order that never trades here costs nothing and reveals
+              nothing. Whether anyone shows up is a distribution problem, not a protocol one,
+              and no amount of cryptography settles it.
+            </div>
           </div>
         </Sheet>
 

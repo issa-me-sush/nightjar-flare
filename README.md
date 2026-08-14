@@ -1,12 +1,23 @@
 # Nightjar
 
-**A sealed-bid venue for FXRP. Your order stays unreadable until it is matched.**
+**A dark pool for FXRP, on Flare Confidential Compute.**
 
-Rest a large order on any public book and you have announced it. Your price and
-your size can be read before you trade, so you get a worse fill. Nightjar
-encrypts the order in your browser and opens it only inside a Flare
-Confidential Compute enclave. Orders that do not match are destroyed there and
-never revealed.
+Send an order to any exchange and the exchange sees it while your counterparty
+does not. Put the matching engine on a public chain and that property
+disappears: your limit price sits in public state, readable by the person about
+to trade against you. Nobody chose that. It is a side effect of the exchange
+being a smart contract.
+
+Nightjar puts the matching engine inside an enclave and gets it back. The
+enclave sees every order in full and matches them like any exchange engine
+would; what changes is that the book is not broadcast. Orders that do not match
+are discarded there and never revealed.
+
+Dark pools are ordinary infrastructure, and confidential venues on-chain are
+not new either. What is different here is narrower: **there is no operator to
+trust, because the chain re-checks the engine's output instead of believing
+it** — and the matching rule is order-independent, so more than one enclave can
+be required to agree.
 
 | | |
 |---|---|

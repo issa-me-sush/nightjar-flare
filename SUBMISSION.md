@@ -1,7 +1,12 @@
 # Flare Summer Signal — BUIDL submission
 
-**Nightjar** — a sealed-bid venue for FXRP, matched inside a Flare Confidential
-Compute enclave and settled on Flare.
+**Nightjar** — a dark pool for FXRP, matched inside a Flare Confidential Compute
+enclave and settled on Flare.
+
+Send an order to any exchange and the exchange sees it while your counterparty
+does not. Put the matching engine on a public chain and that property
+disappears. This puts it back, and the chain audits the engine rather than
+trusting it.
 
 **Targets both bounties:**
 - **Bounty 2 — Confidential Compute Apps** (primary)
@@ -222,7 +227,7 @@ needs.
 
 ---
 
-## Bounty 1 — arrive from the XRP Ledger, then trade without showing your hand
+## Bounty 1 — arriving from the XRP Ledger
 
 FXRP's problem is no longer minting; v1.3 fixed that. It is that once minted
 there is nowhere to go with size — and the mainnet measurement says the holders
