@@ -414,6 +414,86 @@ The strategic case is narrower than "privacy is good":
 
 ## How it works
 
+The one thing worth seeing before the detail is where the trust boundary
+falls: the enclave is the only place your order's terms exist in the clear,
+and the chain re-checks its work afterwards rather than believing it.
+
+```mermaid
+flowchart TB
+    subgraph you["Your browser"]
+        A["side · limit price · size"]
+        B["ECIES-encrypt to the enclave key"]
+        A --> B
+    end
+
+    subgraph pub["Flare — public, on-chain"]
+        V["NightjarAuction<br/>custody · sealed submission"]
+        O["FTSO XRP/USD"]
+        S["settle"]
+    end
+
+    subgraph sealed["Flare Confidential Compute — sealed"]
+        D["decrypt"]
+        K["order book<br/>enclave memory only"]
+        M["uniform-price clearing"]
+        G["sign settlement"]
+    end
+
+    B -->|"241 bytes of ciphertext"| V
+    V -->|"instruction, fanned to k enclaves"| D
+    D --> K
+    V -->|"runBatch + reference price"| M
+    O -.->|"reference price"| V
+    K --> M
+    M --> G
+    G -->|"settlement + k signatures"| S
+    O -.->|"band re-checked, independently"| S
+    S -->|"balances updated"| V
+    M -.->|"orders that did not trade<br/>are discarded here"| X["nothing leaves"]
+```
+
+`settle` is where the design lives. A valid enclave signature is necessary and
+deliberately not sufficient — it is one of five independent conditions, and
+failing any of them reverts the whole batch:
+
+```mermaid
+flowchart LR
+    P["settlement<br/>signed by the enclave"] --> Q{"k distinct<br/>registered signers?"}
+    Q -->|no| R["revert"]
+    Q -->|yes| T{"both assets<br/>net to zero?"}
+    T -->|no| R
+    T -->|yes| U{"price inside the FTSO band,<br/>re-read on-chain now?"}
+    U -->|no| R
+    U -->|yes| W{"bound to this chain,<br/>venue and batch?"}
+    W -->|no| R
+    W -->|yes| Y{"batch already settled?"}
+    Y -->|yes| R
+    Y -->|no| Z["apply deltas,<br/>then charge the fee"]
+```
+
+And the second door — arriving from the XRP Ledger, where the payment itself
+is what funds you:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as Payer
+    participant X as XRP Ledger
+    participant F as Flare Data Connector
+    participant G as XrplGateway
+    participant V as NightjarAuction
+
+    P->>X: pay XRP to the desk, Flare address in the reference
+    Note over P: holds no FLR, has no Flare wallet
+    X-->>F: validators attest the payment
+    F-->>G: Merkle proof for the voting round
+    G->>G: verify proof · desk's account · ledger tx ok · not claimed · reference names someone
+    G->>V: depositFor, priced at FTSO
+    V-->>P: venue balance funded, ready to seal an order
+```
+
+Step by step, in the contract's own terms:
+
 ```
 1. deposit()          Trader funds a balance on-chain, decoupled in time from
                       any order — so the transfer amount reveals nothing.
