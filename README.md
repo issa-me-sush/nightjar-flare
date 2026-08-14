@@ -14,7 +14,8 @@ Built for Flare Summer Signal on Flare Confidential Compute. Targets **Bounty 2
 
 | | |
 |---|---|
-| **Live page, nothing to install** | <https://issa-me-sush.github.io/nightjar-flare/> |
+| **The app** | <https://nightjarflare.vercel.app/> · [trade](https://nightjarflare.vercel.app/trade) · [depth](https://nightjarflare.vercel.app/depth) · [proof](https://nightjarflare.vercel.app/proof) |
+| **No-wallet page, nothing to install** | <https://issa-me-sush.github.io/nightjar-flare/> |
 | **The harm, measured** | `cd tools && go run ./cmd/run-comparison` — deploys nothing, replays the control experiment |
 | **The ecosystem problem, measured** | `cd tools && go run ./cmd/fxrp-depth` — reads **Flare mainnet**, no key needed |
 | **Settled batch on Coston2** | [`0x083d86d7…`](https://coston2-explorer.flare.network/tx/0x083d86d734cb021fc58b6225d4fe5f4964f65ed0c1c20990f8eb22dd5cfb2c6d) |
@@ -24,6 +25,21 @@ Built for Flare Summer Signal on Flare Confidential Compute. Targets **Bounty 2
 
 Everything below that is a number can be re-derived by running one of those.
 Nothing here asks you to take our word for it.
+
+**Two minutes, in this order.** Open
+[nightjarflare.vercel.app/depth](https://nightjarflare.vercel.app/depth) and
+watch it read Flare mainnet: 149.6M FXRP outstanding against roughly $1.2M of
+stablecoin to sell into. Then
+[/proof](https://nightjarflare.vercel.app/proof), which reads Coston2 and
+shows the same trade on a transparent book and on this one, and the batch
+where five orders went in and three were never revealed. Neither page needs a
+wallet, and neither needs anything of ours to be running.
+
+If you want to place an order yourself you need a Coston2 wallet and the live
+enclave, which runs on a small host and may be down. The recorded demo and the
+transactions above are the canonical evidence; please do not read a sleeping
+enclave as a broken project.
+
 
 ---
 
