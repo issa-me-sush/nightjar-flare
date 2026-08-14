@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nightjar — trade FXRP without showing your hand</title>
-<meta name="description" content="An on-chain venue where your order stays encrypted until it is matched. The privacy an OTC desk sells, without the desk. Live on Flare Coston2.">
+<title>Nightjar — a dark pool for FXRP on Flare</title>
+<meta name="description" content="Exchanges keep your order secret from your counterparty. On-chain books do not. Nightjar puts the matching engine inside a Flare Confidential Compute enclave, and the chain audits what it returns. Live on Coston2.">
 <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face{font-family:Geist;src:url(fonts/Geist-Variable.woff2)format("woff2");font-weight:100 900;font-display:swap}
@@ -142,13 +142,15 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
 <header class="top">
   <div class="hero">
     <div class="stack g24">
-      <p class="eyebrow">Flare Confidential Compute</p>
-      <h1>Trade FXRP without<br>showing your hand.</h1>
-      <p class="lede">Put a large order on any public book and you have announced it. Your price
-        and your size are readable before you trade, and you get a worse fill. Nightjar keeps
-        your order encrypted until the moment it is matched.</p>
-      <p class="small" style="max-width:42ch">It is the privacy an OTC desk sells, without the
-        desk — atomic on-chain settlement, and no counterparty who learns your position.</p>
+      <p class="eyebrow">A dark pool for FXRP · Flare Confidential Compute</p>
+      <h1>Exchanges keep your order<br>secret. On-chain books don&rsquo;t.</h1>
+      <p class="lede">Send an order to any exchange and the exchange sees it while your
+        counterparty does not. That is how markets have worked for decades. Put the matching
+        engine on a public chain and the property disappears: your limit price becomes readable
+        by the person about to trade against you.</p>
+      <p class="small" style="max-width:44ch">Nightjar puts the matching engine inside a Flare
+        Confidential Compute enclave and gets it back. The difference from a desk is that nobody
+        has to be trusted: the chain audits what the engine returns instead of believing it.</p>
       <p class="tiny">Live on Flare Coston2 against real FAssets FXRP. Every number on this page
         is read from the chain by your browser.</p>
     </div>
