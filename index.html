@@ -481,15 +481,15 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
               <td class="n jade"><a href="https://coston2-explorer.flare.network/tx/0xe09d510e776810c1243bdb13a6c36f43a7a0f40f18862f6e106896aa28985ec8" target="_blank" rel="noreferrer">0xe09d510e…</a></td>
             </tr>
             <tr>
-              <td class="n"><a href="https://testnet.xrpl.org/transactions/7FE5394C9CA826B7F861AD9BF1F484CAC4D790AEA9DAFBB2C98773ED991BBA11" target="_blank" rel="noreferrer">25 XRP</a></td>
-              <td class="n jade"><a href="https://coston2-explorer.flare.network/tx/0x1f0a145bf13ab3187fcc691212863adf06e13059b8593491e273e2f49b7f9695" target="_blank" rel="noreferrer">0x1f0a145b…</a></td>
+              <td class="n"><a href="https://testnet.xrpl.org/transactions/9A275B13DBABBC9FE2F98496BE840CAB369ED56C5E47D91E99B111A3B449FE58" target="_blank" rel="noreferrer">25 XRP</a></td>
+              <td class="n jade"><a href="https://coston2-explorer.flare.network/tx/0x64ba0a3d04258acc89c809046148a350ffb47a29d7716709cb2f0a6e0d864f12" target="_blank" rel="noreferrer">0x64ba0a3d…</a></td>
             </tr>
           </tbody>
         </table></div>
         <dl class="dl">
           <div><dt>XRP credited so far</dt><dd class="jade" id="gwDrops">—</dd></div>
           <div><dt>Gateway still able to honour</dt><dd id="gwCapacity">—</dd></div>
-          <div><dt>Gateway contract</dt><dd><a href="https://coston2-explorer.flare.network/address/0xd905e4A9E8c0A7f5c8c61db91a41B72B2203eD12" target="_blank" rel="noreferrer">0xd905e4A9…</a></dd></div>
+          <div><dt>Gateway contract</dt><dd><a href="https://coston2-explorer.flare.network/address/0xbc62e861C31Ce6581524b4A6d5518eb3a48eF708" target="_blank" rel="noreferrer">0xbc62e861…</a></dd></div>
         </dl>
         <p class="tiny">The gateway never holds the XRP and cannot credit anyone without a proof
           Flare's own validators produced. 18 tests cover the ways it could otherwise be
@@ -588,12 +588,12 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
 <script>
 const RPC="https://coston2-api.flare.network/ext/C/rpc";
 const EXPLORER="https://coston2-explorer.flare.network";
-const NIGHTJAR="0xf1aC147ae55c70E5De1c30d734FA17AE3C1D34C3";
+const NIGHTJAR="0xA290b54398a0D8C0EbD719Ec33846b69Cf913094";
 const TRANSPARENT="0xD2Ce3f06E446Cf967eEC4F3D6fdBB0063be44456";
-const ORDER_TX="0x1b1e98f95e3074a0450018add05474feadd6c1235df0db0360886d70bb1827b0";
-const SETTLE_TX="0xa8426491e304423a3c89cec7bc8888e641c3c724beeda862bbd077f3adc16e21";
+const ORDER_TX="0xa8d612dfddb5dcf50bd4f277c6278672cb545116b602154b4bdbbe1bfce857fd";
+const SETTLE_TX="0x083d86d734cb021fc58b6225d4fe5f4964f65ed0c1c20990f8eb22dd5cfb2c6d";
 const TAKE_TX="0xb87f6b7c9918cb4fcf1e8a19773af0ad748e6faefce2ba6ea1b587e83958cb5c";
-const DEPTH_SETTLE_TX="0x020a260fc32f023dd1ae16cab889726a5680f399daa868cd6496540e433340bd";
+const DEPTH_SETTLE_TX="0xa37aee2f156bc18bf5cd2699c15b25e7ff12d277b8d6730f6232f8364aab35f2";
 const BATCH=1n, LEAKED_ORDER=2n, DEPTH_BATCH=2n;
 
 // Flare mainnet, for the liquidity measurement. FXRP resolved from the FAssets
@@ -614,7 +614,7 @@ const EXITS=[
 ];
 const USDT0="0xe7cd86e13AC4309349F30B3435a9d337750fC82D";
 // The XRPL rail on Coston2.
-const GATEWAY="0xd905e4A9E8c0A7f5c8c61db91a41B72B2203eD12";
+const GATEWAY="0xbc62e861C31Ce6581524b4A6d5518eb3a48eF708";
 
 // selectors from `cast sig`, so this page needs no crypto library
 const SEL={batchSettled:"0x7cf716dc",batchOrderCount:"0x5f9df644",teeAddress:"0x78b9e620",
