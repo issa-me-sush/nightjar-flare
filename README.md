@@ -16,7 +16,7 @@ are discarded there and never revealed.
 Dark pools are ordinary infrastructure, and confidential venues on-chain are
 not new either. What is different here is narrower: **there is no operator to
 trust, because the chain re-checks the engine's output instead of believing
-it** — and the matching rule is order-independent, so more than one enclave can
+it**. The matching rule is also order-independent, so more than one enclave can
 be required to agree.
 
 | | |
@@ -43,14 +43,14 @@ running. Placing an order needs a Coston2 wallet and the live enclave.
 ## The problem, measured on Flare mainnet
 
 FXRP is Flare's flagship asset. It has a large float and almost nothing on the
-other side of the trade. This is not an opinion — `go run ./cmd/fxrp-depth`
-reads it live from Flare mainnet and prints the addresses it read:
+other side of the trade. `go run ./cmd/fxrp-depth` reads it
+live from Flare mainnet and prints the addresses it read:
 
 ```
 supply         149,614,009 FXRP
 
 Where the float sits
-  Firelight vault            58,464,556 FXRP  39.07%   yield vault — deposited, not quoted
+  Firelight vault            58,464,556 FXRP  39.07%   yield vault, deposited not quoted
   Morpho                     31,347,660 FXRP  20.95%   lending collateral
   Kinetic                    20,403,986 FXRP  13.63%   lending collateral
   LayerZero OFT adapter      16,116,081 FXRP  10.77%   bridged off Flare
@@ -78,8 +78,8 @@ Three things follow from that:
   different wrapper. Only three pools, holding $1.23M, let a holder actually
   out.
 
-Incentives have already been tried at scale — the FAssets programme committed
-billions of FLR to exactly this — and the float responded by sitting in vaults
+Incentives have already been tried at scale. The FAssets programme committed
+billions of FLR to exactly this, and the float responded by sitting in vaults
 or bridging away. That is the tell. **Depth is not missing for want of
 subsidy. It is missing because quoting it publicly is what it costs you.**
 
@@ -90,9 +90,9 @@ which is precisely what Flare shipped.
 ## The leak, demonstrated rather than asserted
 
 A resting order answers questions about itself. The repo ships
-[`TransparentVenue.sol`](contracts/TransparentVenue.sol) — an ordinary on-chain
-limit order book with the same economics — as a **control**, and runs the
-identical trade through both venues.
+[`TransparentVenue.sol`](contracts/TransparentVenue.sol) as a **control**. It is
+an ordinary on-chain limit order book with the same economics, and the identical
+trade runs through both venues.
 
 It is deliberately not a strawman: orders rest in storage exactly as they do on
 any on-chain CLOB, and the seller does nothing more exotic than call a view
@@ -114,7 +114,7 @@ cd tools && go run ./cmd/run-comparison
 **Be precise about what that number is.** Both prices are parameters we chose,
 so the magnitude is a property of this example, not a market estimate. How much
 it costs any given trader is the gap between their limit and their
-counterparty's reserve, which is theirs to quote rather than ours — the
+counterparty's reserve, which is theirs to quote rather than ours. The
 calculator on the public page takes your own numbers.
 
 What does generalise is the mechanism: `getOrder` is a public view function on
@@ -128,7 +128,7 @@ This is the decision the rest of the system rests on.
 
 The obvious way to build a confidential venue is to put a normal
 price-time-priority order book inside an enclave. Flare's own reference
-implementation does exactly that. It works — and it permanently costs you the
+implementation does exactly that. It works, and it permanently costs you the
 ability to run more than one enclave.
 
 Price-time priority is a function of **arrival order**. Two enclaves fed the
@@ -140,7 +140,7 @@ single-machine.
 A uniform-price batch auction has no such dependency. It takes a *set* of
 orders and computes the single price that maximises matched volume. Feed the
 same set in any order and every enclave produces byte-identical output. That is
-[tested directly](go/internal/matching/matching_test.go) — determinism under
+[tested directly](go/internal/matching/matching_test.go). Determinism under
 reordering is one of the eleven matching-engine tests, and it is there because
 it is the property the security model rests on.
 
@@ -220,19 +220,19 @@ The order book and the auction. Specifically:
 
 ### What is verified or consumed on-chain
 
-Deliberately, a lot — the enclave proposes and the chain disposes. `settle()`
+Deliberately, a lot. The enclave proposes and the chain disposes. `settle()`
 rejects the enclave's own signed output unless all of the following hold:
 
 | Check | What it stops |
 |---|---|
 | **Quorum** — k distinct registered enclave signatures over the settlement digest | A forged or single-compromised-enclave settlement |
 | **Conservation** — base deltas sum to 0, quote deltas sum to 0, checked *before* fees | A batch that invents value instead of moving it |
-| **Oracle band** — clearing price re-read against FTSO XRP/USD **on-chain at settlement**, not just inside the enclave | An enclave clearing at a price it made up |
+| **Oracle band**, clearing price re-read against FTSO XRP/USD **on-chain at settlement**, not just inside the enclave | An enclave clearing at a price it made up |
 | **Binding** — settlement is bound to one chain id, one venue address, one batch id | Replay onto another venue or batch |
 | **Attribution** — `msg.sender` recorded at submission; enclave rejects any order whose decrypted `trader` disagrees | Someone else replaying your ciphertext |
 | **Fee ceiling** — `MAX_FEE_BPS = 30`, immutable in bytecode | Governance changing the deal after you deposit |
 
-Consumed on-chain: FTSO XRP/USD via `ContractRegistry`, read **twice** — once
+Consumed on-chain: FTSO XRP/USD via `ContractRegistry`, read **twice**: once
 to seed the batch reference price, once independently at settlement.
 
 ### What trust assumptions exist
@@ -240,7 +240,7 @@ to seed the batch reference price, once independently at settlement.
 **You must trust:**
 
 - The TEE hardware and its attestation to keep order terms confidential while
-  matching. Subject to the physical-attack caveat above — which is why the
+  matching. Subject to the physical-attack caveat above, which is why the
   quorum path exists.
 - That the code hash registered on-chain is the code actually running. This is
   what `TeeExtensionRegistry` and reproducible builds pin down.
@@ -261,7 +261,7 @@ to seed the batch reference price, once independently at settlement.
 - *That the operator will not raise fees on you.* The ceiling is in bytecode.
 
 **Deliberately public:** that a given address submitted *an* order in a given
-batch (they sent a transaction — we do not pretend otherwise); the number of
+batch (they sent a transaction, and we do not pretend otherwise); the number of
 orders in a batch; and the clearing price, matched volume and per-trader net
 deltas of a *settled* batch.
 
@@ -273,7 +273,7 @@ alternative fails on something concrete:
 
 - **Commit–reveal** requires the reveal. A participant who dislikes the outcome
   declines to reveal, and you are left choosing between griefing and forfeited
-  bonds. It also cannot support a resting book — only a discrete round.
+  bonds. It also cannot support a resting book, only a discrete round.
 - **Encrypted state with on-chain decryption** publishes the plaintext at
   decryption time, which is exactly the moment it becomes valuable.
 - **ZK proofs** hide inputs beautifully but cannot *match* across parties'
@@ -286,7 +286,7 @@ alternative fails on something concrete:
   trading venue.
 
 A TEE gives you a machine that can *hold* plaintext, act on it, and prove which
-code it is running — while the chain independently constrains what that machine
+code it is running, while the chain independently constrains what that machine
 is permitted to output. That combination is the product, and Flare is the only
 place it is enshrined next to the asset (FXRP) and the price feed (FTSO) the
 venue needs.
@@ -296,7 +296,7 @@ venue needs.
 ## Arriving from the XRP Ledger
 
 FXRP's problem is no longer minting; v1.3 fixed that. Its problem is that once
-minted there is nowhere to go with size — and the measurement at the top of
+minted there is nowhere to go with size. The measurement at the top of
 this file says the holders noticed, because the fourth-largest holder of FXRP
 is the bridge taking it *off* Flare.
 
@@ -315,7 +315,7 @@ to credit as the payment's standard reference. Flare's Data Connector attests
 the payment. [`XrplGateway.sol`](contracts/XrplGateway.sol) verifies that proof
 against the Merkle root the Data Connector published, checks the payment
 actually landed in the desk's XRPL account, prices the XRP at Flare's own FTSO
-feed, and credits the address the payment named — **straight into that
+feed, and credits the address the payment named, **straight into that
 address's venue balance, ready to trade.** Not their wallet: they have just
 arrived from a chain where they hold no FLR, so a credit that still required
 them to send a deposit transaction would not actually have got them anywhere.
@@ -331,13 +331,13 @@ payments:**
 **In the app**, the terminal's funding panel has a *From the XRP Ledger*
 section: it shows the desk's XRPL account and the reference to use, takes your
 payment hash, and walks the attestation through to the credit. The relayer pays
-the Flare-side fees, because someone arriving from the XRPL has no FLR yet —
+the Flare-side fees, because someone arriving from the XRPL has no FLR yet,
 and it cannot redirect a drop, since the proof names its own beneficiary.
 
 So the whole path costs the payer exactly one signature, on the chain they
 already use. They pay XRP; their Nightjar balance is funded; they seal an
 order. `depositFor` is what makes that possible, and it grants no authority
-over the recipient — the caller spends its own tokens and there is
+over the recipient, the caller spends its own tokens and there is
 deliberately no matching `withdrawFor`.
 
 Or from the command line, against your own payment:
@@ -347,7 +347,7 @@ cd tools && go run ./cmd/xrpl-fund -tx 0x<your-xrpl-transaction-hash>
 ```
 
 **What makes this more than a bridge.** The gateway never takes custody of the
-XRP and cannot credit anyone on our say-so — the only thing that moves value is
+XRP and cannot credit anyone on our say-so, the only thing that moves value is
 a proof Flare's own validators produced. `fund()` is permissionless on purpose,
 so a relayer can carry the proof for a payer who holds no FLR at all, which is
 the realistic case for someone arriving from the XRPL. Eighteen tests cover the
@@ -365,7 +365,7 @@ The base asset is the **real FAssets FXRP** on Coston2 (`FTestXRP`, not a mock).
 ## Who it is for
 
 The people who currently pick up the phone. When someone wants to move real
-size in crypto today they do not use a DEX — they message an OTC desk, take a
+size in crypto today they do not use a DEX, they message an OTC desk, take a
 private quote, and settle bilaterally. That whole industry exists because
 public books leak intentions.
 
@@ -374,8 +374,8 @@ public books leak intentions.
 - **Market makers.** Quotes stay hidden until matched, so quoting real size
   stops meaning being adversely selected for it. That is why books are thin.
 - **Treasuries and funds.** Rebalance an XRP position without broadcasting the
-  position or the intent — for most institutions, the difference between using
-  DeFi and not.
+  position or the intent. For most institutions that is the difference between
+  using DeFi and not.
 
 **Who it is not for:** anyone swapping 50 FXRP. Too small to be worth
 attention, and an ordinary DEX serves them fine. This is infrastructure for
@@ -384,14 +384,14 @@ size.
 The honest risk, named: every standalone dark pool in crypto has failed on
 cold-start liquidity rather than on cryptography. Renegade and Penumbra both
 shipped good technology to negligible volume. That is the thing to solve, and
-it is a distribution problem, not a protocol one — which is why the roadmap
+it is a distribution problem, not a protocol one, which is why the roadmap
 below starts with the four counterparties who already hold 84% of the float
 rather than with more features.
 
 ## The business model
 
 The venue charges **5 bps of matched notional**, and only on volume that
-actually trades. The fee applies only to volume actually matched — an order that
+actually trades. The fee applies only to volume actually matched, an order that
 never trades costs nothing, which is the right incentive for a venue whose
 whole promise is that you can leave size sitting without consequence.
 
@@ -399,7 +399,7 @@ The ceiling is **30 bps, fixed in the bytecode**. Governance can lower the fee
 and can never raise it past that, so depositing does not require trusting the
 owner not to change the deal later.
 
-At 5 bps, $10M of monthly matched volume is $5,000 of monthly protocol revenue —
+At 5 bps, $10M of monthly matched volume is $5,000 of monthly protocol revenue,
 small, and deliberately so at this stage. The number that matters is not the
 take rate but whether size shows up at all, because $1.23M of exit depth is the
 ceiling on everything else Flare wants to build on FXRP.
@@ -409,7 +409,7 @@ ceiling on everything else Flare wants to build on FXRP.
 Flare's framing of Confidential Compute is institutional: FCC exists so that
 *"sensitive data about large-scale transactions conducted by traders and funds
 remains confidential"*, and the ecosystem write-ups name the two applications
-hardest to build on a transparent chain explicitly — **dark pools for large
+hardest to build on a transparent chain explicitly: **dark pools for large
 trades, and sealed-bid auctions.** Nightjar is both, for the asset Flare cares
 most about.
 
@@ -418,7 +418,7 @@ The strategic case is narrower than "privacy is good":
 1. **FXRP's exit depth is 0.82% of its float.** Measured, above, on mainnet.
    Everything Flare wants to build on FXRP is capped by that number.
 2. **Subsidy has been tried.** The float responded by parking or leaving.
-3. **The remaining lever is structural** — remove the reason to hide, rather
+3. **The remaining lever is structural**, remove the reason to hide, rather
    than pay people to stop hiding.
 4. **Only Flare can pull it.** It is the one chain where confidential
    execution, the XRP-backed asset, and a decentralised price feed are all
@@ -465,7 +465,7 @@ flowchart TB
 ```
 
 `settle` is where the design lives. A valid enclave signature is necessary and
-deliberately not sufficient — it is one of five independent conditions, and
+deliberately not sufficient. It is one of five independent conditions, and
 failing any of them reverts the whole batch:
 
 ```mermaid
@@ -483,7 +483,7 @@ flowchart LR
     Y -->|no| Z["apply deltas,<br/>then charge the fee"]
 ```
 
-And the second door — arriving from the XRP Ledger, where the payment itself
+And the second door, arriving from the XRP Ledger, where the payment itself
 is what funds you:
 
 ```mermaid
@@ -508,7 +508,7 @@ Step by step, in the contract's own terms:
 
 ```
 1. deposit()          Trader funds a balance on-chain, decoupled in time from
-                      any order — so the transfer amount reveals nothing.
+                      any order, so the transfer amount reveals nothing.
 
 2. submitOrder(ct)    Trader ECIES-encrypts {trader, side, limitPrice, size,
                       nonce} to the TEE public key. The contract stores nothing
@@ -537,22 +537,22 @@ Step by step, in the contract's own terms:
 
 ### Flare protocols used, and what each one load-bears
 
-- **FCC** — the extension itself: the enclave-held book, `/decrypt` and `/sign`,
+- **FCC**: the extension itself: the enclave-held book, `/decrypt` and `/sign`,
   the `TeeExtensionRegistry` / `TeeMachineRegistry` instruction path, and
   `getRandomTeeIds` for quorum fan-out. Remove it and there is no product.
-- **FTSO** — XRP/USD read on-chain via `ContractRegistry`, used twice as an
+- **FTSO**: XRP/USD read on-chain via `ContractRegistry`, used twice as an
   independent bound on the enclave's output. Remove it and a compromised
   enclave can clear at any price it likes.
-- **FDC** — the XRP Ledger rail. `XrplGateway` verifies a Data Connector
+- **FDC**: the XRP Ledger rail. `XrplGateway` verifies a Data Connector
   `Payment` proof before it credits anyone, so an XRPL payment is the only
   thing that can open a balance through that door. Remove it and the venue is
   Flare-only.
-- **FAssets / FXRP** — the base asset, real `FTestXRP` on Coston2. It is what
+- **FAssets / FXRP**: the base asset, real `FTestXRP` on Coston2. It is what
   the venue is *for*.
 
 ### Batch history, without an indexer
 
-The venue records each settled batch in storage — clearing price, matched
+The venue records each settled batch in storage: clearing price, matched
 volume, fee, order count. Not a convenience: the public Coston2 RPC caps
 `eth_getLogs` at **30 blocks**, so a venue whose history lives only in events is
 effectively unreadable from a browser. What is recorded is batch-level
@@ -573,10 +573,10 @@ Flare Summer Signal asks entrants to separate new work from pre-existing work.
 
 **Pre-existing, not ours:**
 
-- `flare-foundation/fce-extension-scaffold` — the FCC extension skeleton, the
+- `flare-foundation/fce-extension-scaffold`: the FCC extension skeleton, the
   `tools/` support packages, the docker/proxy topology, `scripts/*.sh`. This is
   Flare's starter, used as intended.
-- `tee-node`, `tee-proxy`, `go-flare-common` — Flare's own infrastructure,
+- `tee-node`, `tee-proxy`, `go-flare-common`: Flare's own infrastructure,
   consumed as dependencies.
 - FAssets `FTestXRP` on Coston2; the FTSO contracts.
 
@@ -612,7 +612,7 @@ sponsor cannot get anywhere else. The long version is
 1. **The indexer is the hidden dependency, and it fails silently.** TEE
    registration does an FTDC availability check against a C-chain indexer. Run
    your own against a public RPC and it drifts a few reward epochs behind the
-   head — and because the policy-consistency preflight has a ±1 tolerance, it
+   head, and because the policy-consistency preflight has a ±1 tolerance, it
    *passes*, then registration 404s with nothing pointing at the cause. Ours sat
    at signing policy 5931 against a chain at 5935. Pointing at Flare's shared
    indexer made registration succeed in four seconds. Suggestion: make the
@@ -623,12 +623,12 @@ sponsor cannot get anywhere else. The long version is
    `keccak256("\x19Ethereum Signed Message:\n32" || keccak256(payload))`. A
    verifying contract that recovers against the bare hash fails every time with
    an opaque bad-signature error. Worse, unit tests that construct signatures
-   the same wrong way pass happily — ours did, fourteen of them. Worth one line
+   the same wrong way pass happily. Ours did, fourteen of them. Worth one line
    in the signing guide.
 
 3. **FTSO reads blow the default gas estimate.** `ContractRegistry` →
    `FtsoV2.getFeedById` inside a settlement pushed `gasUsed` to 243,887 against
-   an estimated 246,529 — simulation succeeded, the transaction reverted. An
+   an estimated 246,529. Simulation succeeded, the transaction reverted. An
    explicit gas limit fixes it, but the failure looks like a contract bug.
 
 None of these are hard once known; all three cost a day each. The scaffold
@@ -646,10 +646,10 @@ contracts/
   TransparentVenue.sol          The control. An ordinary public CLOB
   XrplGateway.sol               XRPL → Flare, on an FDC Payment proof
   test/NightjarAuction.t.sol    33 tests
-  test/XrplGateway.t.sol        18 tests — every way the float could leave
+  test/XrplGateway.t.sol        18 tests, every way the float could leave
 go/
-  internal/matching/            The auction itself. Pure, no I/O — 11 tests
-  internal/extension/           Instruction routing and handlers — 11 tests
+  internal/matching/            The auction itself. Pure, no I/O, 11 tests
+  internal/extension/           Instruction routing and handlers, 11 tests
   internal/extension/teeclient  /decrypt and /sign against the TEE node
   pkg/types/                    Wire types shared with the frontend + ABI codecs
 tools/cmd/
@@ -673,7 +673,7 @@ The matching engine is deliberately a pure function of (orders, reference
 price, tolerance), so the economically load-bearing logic is tested without a
 TEE, a chain, or a network. Its tests cover uniform pricing, volume
 maximisation, asset conservation, partial fills, oracle-band rejection, and
-**determinism under reordering** — the last because it is what makes a quorum
+**determinism under reordering**, the last because it is what makes a quorum
 of enclaves possible at all.
 
 ## Running it
@@ -686,7 +686,7 @@ cp .env.example .env          # set DEPLOYMENT_PRIVATE_KEY, INITIAL_OWNER
 ./scripts/full-setup.sh --chain coston2 --tunnel --test
 ```
 
-Use **Flare's shared indexer**, not your own — see the feedback section above,
+Use **Flare's shared indexer**, not your own. See the feedback section above,
 and [`docs/indexer.md`](docs/indexer.md) if you want to self-host anyway.
 
 ## Deployed on Coston2
@@ -724,7 +724,7 @@ Protocol fee: 1530 quote per side at 5 bps
 Trader A received 3000000 base; trader B received 3058470 quote
 ```
 
-The buyer bid **1.06** and paid **1.02** — the uniform clearing price, not her
+The buyer bid **1.06** and paid **1.02**, the uniform clearing price, not her
 own limit. Both assets net to zero, which is what `settle()` requires before it
 will move anything.
 
@@ -741,13 +741,13 @@ will move anything.
 5 orders resting. The chain knows only that number.
   price          1.0100
   matched        1.000000 FXRP of 5 resting orders
-  NEVER REVEALED 3 orders — terms destroyed inside the enclave
+  NEVER REVEALED 3 orders, terms destroyed inside the enclave
 ```
 
 This is the one that matters. A single crossing pair proves the plumbing; a
 market maker resting a ladder and keeping it after the batch clears is the
 actual product. The chain holds a clearing price, a matched volume, and two net
-deltas. Of the three orders that did not trade it holds nothing — not the side,
+deltas. Of the three orders that did not trade it holds nothing. Not the side,
 not the price, not the size.
 
 ## Browser demo
@@ -762,7 +762,7 @@ Connect MetaMask on Coston2 (chain id 114). The page fetches the enclave's
 public key through a server route, seals orders **in the browser**, and shows
 you the exact ciphertext that will go on-chain.
 
-The sealing is [`lib/ecies.ts`](frontend/lib/ecies.ts) — geth's ECIES written
+The sealing is [`lib/ecies.ts`](frontend/lib/ecies.ts), geth's ECIES written
 against Web Crypto and `@noble`, because the library option (`ecies-geth`)
 depends on Node built-ins and native secp256k1 bindings that no longer survive
 a modern bundler. It is round-trip tested against the enclave's Go decrypt
