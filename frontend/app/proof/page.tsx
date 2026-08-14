@@ -158,14 +158,19 @@ export default async function Proof() {
 
           {d && (
             <>
-              {/* headline */}
-              <div className="figure">
-                <span className="n">{d.bps.toString()} bps</span>
-                <p className="cap">
-                  is what the transparent venue cost the buyer, against the sealed one. Same
-                  buyer, same seller, same size — the only difference was whether her limit price
-                  could be read.
-                </p>
+              {/* What the leak is, before what it cost in this instance. The
+                  mechanism generalises; the magnitude is a function of the gap
+                  between a trader's limit and their counterparty's reserve, so
+                  it is not ours to quote as a market rate. */}
+              <div className="note amber">
+                <strong>A resting order answers questions about itself.</strong> On the
+                transparent venue the seller called <code>getOrder</code>, a public view
+                function, read the buyer&rsquo;s limit, and asked for exactly that instead of
+                the lower price he would have accepted. No mempool access, no searcher
+                infrastructure, no bots. For this pair that came to{" "}
+                <strong>{d.bps.toString()} basis points</strong> — your own figure is the gap
+                between your limit and your counterparty&rsquo;s reserve. What generalises is
+                that reading it costs the counterparty nothing.
               </div>
 
               {/* side by side */}
@@ -252,7 +257,7 @@ export default async function Proof() {
                     <div><dt>Fees collected to date</dt><dd>{formatAmount(d.feesCollected)} {QUOTE_SYMBOL}</dd></div>
                   </dl>
                   <p className="small">
-                    {d.feeBps} bps against roughly {d.bps.toString()} the trader keeps. The fee is
+                    {d.feeBps} bps, charged only on volume that trades. The fee is
                     charged only on volume actually matched, so resting size costs nothing — which
                     is the point of the venue. The ceiling cannot be raised by governance, so
                     depositing does not require trusting the owner not to change the deal later.

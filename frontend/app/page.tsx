@@ -140,23 +140,17 @@ export default function Landing() {
           </div>
         </Sheet>
 
-        <Sheet label="The cost" sub="measured on-chain">
+        <Sheet label="The leak" sub="demonstrated on-chain">
           <div className="stack gap32">
-            <div className="figure">
-              <span className="n">392 bps</span>
-              <p className="cap">
-                is what a transparent order book cost the buyer, against this one. Same buyer,
-                same seller, same size — the only difference was whether her limit price could
-                be read.
-              </p>
-            </div>
+            <h2>A resting order answers questions about itself.</h2>
 
             <p className="body">
-              We did not want to assert that, so we deployed an ordinary on-chain limit order
-              book as a control and ran the identical trade through both. On the transparent
-              one the seller called a public view function, read that the buyer would pay up
-              to 1.06, and asked exactly that instead of the 1.02 he would have accepted. No
-              mempool games, no searcher infrastructure — reading public state was enough.
+              We did not want to leave that as an assertion, so we deployed an ordinary
+              on-chain limit order book alongside this one and ran the same trade through
+              both. On the transparent venue the seller called <code>getOrder</code>, a
+              public view function, read the buyer&rsquo;s limit, and asked for exactly that
+              instead of the lower price he would have accepted. No mempool access, no
+              searcher infrastructure, no bots. One view call.
             </p>
 
             <div className="compare">
@@ -182,6 +176,14 @@ export default function Landing() {
                 </div>
               </div>
             </div>
+
+            <p className="small">
+              Both venues are live on Coston2 and both transactions are on the{" "}
+              <Link href="/proof">proof page</Link>. How much this costs you is the gap
+              between your limit and your counterparty&rsquo;s reserve, which is yours to
+              quote rather than ours — for this pair it is 392 basis points. What generalises
+              is that reading it costs the counterparty nothing.
+            </p>
           </div>
         </Sheet>
 
@@ -241,7 +243,7 @@ export default function Landing() {
           <div className="stack gap24">
             <h2>Charged only on volume it actually matches.</h2>
             <p className="body">
-              Five basis points of matched notional against roughly the 392 the trader keeps. An
+              Five basis points of matched notional, charged only on volume that trades. An
               order that never matches is free — the right incentive for a venue whose whole
               promise is that you can rest size without consequence. The ceiling is fixed in the
               bytecode, so governance can lower the fee and can never raise it past that.

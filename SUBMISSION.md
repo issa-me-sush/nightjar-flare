@@ -14,7 +14,7 @@ Compute enclave and settled on Flare.
 | Network | Flare Coston2 (chain id 114) |
 | Venue | [`0xA290b54398a0D8C0EbD719Ec33846b69Cf913094`](https://coston2-explorer.flare.network/address/0xA290b54398a0D8C0EbD719Ec33846b69Cf913094) |
 | FCC extension | `66250` (`0x102ca`) |
-| Registered enclave | `0x85960fBeE38B275582320f4C291a46624d3B7635` |
+| Registered enclave | `0x32fcFE8ec942aC617363E123D9ACBDA7aDE8dC70` |
 | XRPL gateway | [`0xbc62e861C31Ce6581524b4A6d5518eb3a48eF708`](https://coston2-explorer.flare.network/address/0xbc62e861C31Ce6581524b4A6d5518eb3a48eF708) |
 | Base asset | **Real FAssets FXRP** on Coston2 — `0x0b6A3645c240605887a5532109323A3E12273dc7` |
 | Tests | 51 Solidity + 26 Go, all passing |
@@ -26,7 +26,8 @@ Compute enclave and settled on Flare.
 FXRP has 149.6 million tokens outstanding and about $1.23 million of stablecoin
 on the other side of the trade. Nightjar is a venue where size can rest without
 being seen, because the reason that depth is missing is that showing it is what
-costs you — and we measured that cost at 392 basis points.
+costs you. We shipped the counterfactual to show it: an ordinary order book,
+the same trade both ways, and the leak is one public view call.
 
 ## Short product description
 
@@ -80,10 +81,11 @@ Depth is missing because quoting it publicly is what it costs you — the one
 problem a smart contract cannot fix, since on-chain state is public by
 construction.
 
-## The cost of being visible — a control experiment
+## The leak, demonstrated rather than asserted
 
-The repo ships `TransparentVenue.sol`, an ordinary on-chain limit order book,
-purely so the claim can be measured rather than asserted. The same trade runs
+A resting order answers questions about itself. The repo ships
+`TransparentVenue.sol`, an ordinary on-chain limit order book, so the claim can
+be shown rather than stated. The same trade runs
 through both venues. On the transparent one the seller calls a public view
 function, reads that the buyer will pay up to 1.06, and asks exactly that
 instead of the 1.02 he would have accepted.
@@ -93,10 +95,13 @@ instead of the 1.02 he would have accepted.
 | Transparent book | 1.06 — her own limit | **3.18** |
 | Nightjar | 1.02 — the clearing price | **3.06** |
 
-**392 bps.** Reproduce: `cd tools && go run ./cmd/run-comparison`.
+For this pair that is **392 basis points**. Both prices are parameters we chose,
+so the magnitude belongs to the example; what generalises is that `getOrder` is
+a public view function and the information is free to the counterparty.
 
-No mempool games and no searcher infrastructure were needed. Reading public
-state was enough.
+Reproduce: `cd tools && go run ./cmd/run-comparison`.
+
+No mempool access, no searcher infrastructure, no bots. One view call.
 
 ## What is genuinely new here: the matching rule enables the security model
 
@@ -288,8 +293,8 @@ anyone's attention, and an ordinary DEX serves them fine.
 
 ## Business model
 
-**5 bps of matched notional**, charged to both sides, against roughly the 392
-the trader keeps. An order that never matches is free — the right incentive for
+**5 bps of matched notional**, charged to both sides and only on volume that
+actually trades. An order that never matches is free — the right incentive for
 a venue whose promise is that size can rest without consequence. Ceiling of
 **30 bps fixed in the bytecode**: governance can lower the fee and can never
 raise it past that, so depositing does not require trusting the owner not to
@@ -318,7 +323,7 @@ and the FTSO contracts on Coston2.
 | `go/internal/extension/` | Instruction routing and handlers |
 | `frontend/` | Next.js terminal, landing, proof and depth pages; browser-side sealing |
 | `frontend/lib/ecies.ts` | geth ECIES against Web Crypto + `@noble`, round-trip verified against the Go decrypt path |
-| `tools/cmd/run-comparison` | The 392 bps control experiment |
+| `tools/cmd/run-comparison` | The control venue, and the same trade both ways |
 | `tools/cmd/make-market` | Two-sided ladder producing genuinely unmatched orders |
 | `tools/cmd/fxrp-depth` | The Flare-mainnet liquidity measurement |
 | `tools/cmd/xrpl-fund` | Attestation request → FdcHub → DA-layer proof → `fund()` |
@@ -336,7 +341,7 @@ Nothing was ported from an earlier project. The git history is the record.
 | Base — FAssets FXRP (`FTestXRP`) | `0x0b6A3645c240605887a5532109323A3E12273dc7` |
 | Quote — `nUSD` (demo stand-in) | `0x4AAFF8FCe43dCfdCF2AA2Bbf07B98707A3547036` |
 | FCC extension id | `66250` (`0x102ca`) |
-| Registered enclave | `0x85960fBeE38B275582320f4C291a46624d3B7635` |
+| Registered enclave | `0x32fcFE8ec942aC617363E123D9ACBDA7aDE8dC70` |
 | XrplGateway | `0xbc62e861C31Ce6581524b4A6d5518eb3a48eF708` |
 | Signature threshold | 1 of 1 registered |
 

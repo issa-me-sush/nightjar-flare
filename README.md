@@ -21,7 +21,7 @@ transaction on Coston2.
 ```bash
 cd tools
 go run ./cmd/fxrp-depth        # the market problem, read off Flare mainnet
-go run ./cmd/run-comparison    # what a public book costs, measured
+go run ./cmd/run-comparison    # the same trade on a public book and this one
 ```
 
 `/depth` and `/proof` read the chains directly and need nothing of ours
@@ -76,38 +76,40 @@ And that is the one problem an ordinary smart contract cannot solve, because
 on-chain state is public by construction. It needs confidential execution,
 which is precisely what Flare shipped.
 
-## What it costs to be visible
+## The leak, demonstrated rather than asserted
 
-The claim above has a number attached, and we did not want to assert it. The
-repo ships [`TransparentVenue.sol`](contracts/TransparentVenue.sol) — an
-ordinary on-chain limit order book with the same economics — as a **control**,
-and runs the identical trade through both venues.
+A resting order answers questions about itself. The repo ships
+[`TransparentVenue.sol`](contracts/TransparentVenue.sol) — an ordinary on-chain
+limit order book with the same economics — as a **control**, and runs the
+identical trade through both venues.
 
 It is deliberately not a strawman: orders rest in storage exactly as they do on
 any on-chain CLOB, and the seller does nothing more exotic than call a view
 function. Reading that the buyer would pay up to 1.06, he asks 1.06 instead of
-the 1.02 he would have accepted. No mempool games. No searcher infrastructure.
-Reading public state was enough.
+the 1.02 he would have accepted.
 
 | | Executed at | She paid |
 |---|---|---|
 | Transparent book | 1.06 — her own limit | **3.18** |
 | Nightjar | 1.02 — the clearing price | **3.06** |
 
-**392 basis points**, same 3 FXRP, same counterparty. The only difference was
-whether her limit price could be read.
+Same 3 FXRP, same counterparty. The only difference was whether her limit price
+could be read. For this pair that is **392 basis points**.
 
 ```
 cd tools && go run ./cmd/run-comparison
 ```
 
-This is a controlled demonstration on a testnet, not a market-wide estimate,
-and it is worth being precise about what it does and does not show. It shows
-that *a counterparty who can read your limit will quote against it*, with the
-size of the loss set by the gap between your limit and your true reserve. It
-does not claim every trade on every book loses 392 bps. What it establishes is
-that the mechanism is real and cheap to exploit, which is the part usually
-asserted.
+**Be precise about what that number is.** Both prices are parameters we chose,
+so the magnitude is a property of this example, not a market estimate. How much
+it costs any given trader is the gap between their limit and their
+counterparty's reserve, which is theirs to quote rather than ours — the
+calculator on the public page takes your own numbers.
+
+What does generalise is the mechanism: `getOrder` is a public view function on
+an ordinary CLOB, so the information is free to whoever is on the other side.
+No mempool access, no searcher infrastructure, no bots. That is the part
+usually asserted, and it is why the control venue exists.
 
 ## Why a batch auction, and not an order book
 
@@ -377,8 +379,8 @@ rather than with more features.
 
 ## The business model
 
-The venue charges **5 bps of matched notional**, against roughly the 392 the
-trader keeps. The fee applies only to volume actually matched — an order that
+The venue charges **5 bps of matched notional**, and only on volume that
+actually trades. The fee applies only to volume actually matched — an order that
 never trades costs nothing, which is the right incentive for a venue whose
 whole promise is that you can leave size sitting without consequence.
 
@@ -640,7 +642,7 @@ go/
   internal/extension/teeclient  /decrypt and /sign against the TEE node
   pkg/types/                    Wire types shared with the frontend + ABI codecs
 tools/cmd/
-  run-comparison                The 392 bps control experiment
+  run-comparison                The control venue, and the same trade both ways
   make-market                   A two-sided ladder; most of it never matches
   fxrp-depth                    The Flare-mainnet liquidity measurement
   xrpl-fund                     Attest an XRPL payment and claim it on Flare
@@ -686,7 +688,7 @@ and [`docs/indexer.md`](docs/indexer.md) if you want to self-host anyway.
 | Base asset — FAssets FXRP (`FTestXRP`) | `0x0b6A3645c240605887a5532109323A3E12273dc7` |
 | Quote asset — `nUSD` (deployed for the demo) | `0x4AAFF8FCe43dCfdCF2AA2Bbf07B98707A3547036` |
 | FCC extension id | `66250` (`0x102ca`) |
-| Registered enclave | `0x85960fBeE38B275582320f4C291a46624d3B7635` |
+| Registered enclave | `0x32fcFE8ec942aC617363E123D9ACBDA7aDE8dC70` |
 | Signature threshold | `1` of `1` registered — `addTee()` raises it without redeploying |
 
 The base asset is the **real FAssets FXRP** on Coston2, not a mock. Coston2 has
