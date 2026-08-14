@@ -114,6 +114,26 @@ pre{margin:0;background:var(--void);border:1px solid var(--line);border-radius:v
 .steps .n{color:var(--faint);font-family:var(--mono);font-size:12px;letter-spacing:.1em;padding-top:2px}
 footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-content:space-between;
   gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+
+/* the calculator: three fields on one rule, not a form in a box */
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.calc label{display:flex;flex-direction:column;gap:9px;padding:16px 20px;border-left:1px solid var(--hair)}
+.calc label:first-child{border-left:0;padding-left:0}
+.calc label>span:first-child{font-size:12.5px;color:var(--dim)}
+.calc .inp{display:flex;align-items:baseline;gap:7px}
+.calc input{background:transparent;border:0;border-bottom:1px solid var(--line);
+  color:var(--text);font-family:var(--mono);font-size:21px;font-variant-numeric:tabular-nums;
+  letter-spacing:-.03em;width:100%;min-width:0;padding:0 0 5px;outline:none;
+  transition:border-color .2s ease}
+.calc input:focus{border-bottom-color:var(--jade)}
+.calc input::-webkit-outer-spin-button,.calc input::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0}
+.calc input[type=number]{-moz-appearance:textfield}
+.calc .inp b{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--faint);
+  letter-spacing:.08em}
+@media(max-width:720px){.calc label{border-left:0;padding:14px 0}
+  .calc label+label{border-top:1px solid var(--hair)}}
 </style>
 </head>
 <body>
@@ -238,6 +258,74 @@ footer{padding:26px 0 0;border-top:1px solid var(--hair);display:flex;justify-co
     </div>
     <p class="small">Every fill in a batch executes at one clearing price, so being early or
       ordered favourably in a block is worth nothing, and there is nothing to sandwich.</p>
+  </div>
+</section>
+
+<section>
+  <div class="stack g24">
+    <div class="stack g14" style="max-width:44rem">
+      <p class="eyebrow">Your own numbers</p>
+      <h2>What would showing your hand cost you?</h2>
+      <p class="body">The 392 above is one trade. The mechanism is general, and it is arithmetic
+        rather than a claim: a counterparty who can read your limit has no reason to quote below
+        it. Put your own size in and see.</p>
+    </div>
+
+    <div class="calc">
+      <label><span>You want to buy</span>
+        <span class="inp"><input id="cSize" type="number" min="1" step="1000" value="500000"><b>FXRP</b></span>
+      </label>
+      <label><span>Your limit — the most you'd pay</span>
+        <span class="inp"><input id="cLimit" type="number" min="0" step="0.01" value="2.10"><b>USD</b></span>
+      </label>
+      <label><span>What they'd actually have accepted</span>
+        <span class="inp"><input id="cTrue" type="number" min="0" step="0.01" value="2.00"><b>USD</b></span>
+      </label>
+    </div>
+
+    <div class="vs">
+      <div class="panel">
+        <div class="head"><span class="label" style="color:var(--amber)">transparent book</span>
+          <span class="pill exposed"><span class="dot"></span>your limit is public</span></div>
+        <div class="pad">
+          <p class="small">Anyone can call <code>getOrder()</code>. With your numbers it returns,
+            verbatim:</p>
+          <div class="plate exposed"><div class="readout" id="cLeak"></div></div>
+          <dl class="dl">
+            <div><dt>They quote</dt><dd class="amber" id="cTPrice">—</dd></div>
+            <div><dt>You pay</dt><dd id="cTPaid">—</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="head"><span class="label" style="color:var(--jade)">nightjar</span>
+          <span class="pill sealed"><span class="dot"></span>sealed until matched</span></div>
+        <div class="pad">
+          <p class="small">Same intent. The chain holds ciphertext, so there is no limit to quote
+            against and the batch clears in the middle:</p>
+          <div class="plate sealed"><div class="cipher" id="cSeal"></div></div>
+          <dl class="dl">
+            <div><dt>Clears at</dt><dd class="jade" id="cNPrice">—</dd></div>
+            <div><dt>You pay</dt><dd id="cNPaid">—</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack g8">
+      <div class="big" id="cSaved">—</div>
+      <p class="body" style="margin-top:-4px"><span id="cBps">—</span> — the difference between
+        trading against someone who can read your limit and someone who cannot. The venue would
+        charge <span class="mono" id="cFee">—</span> of that at 5 bps.</p>
+    </div>
+
+    <p class="tiny">Arithmetic, not a simulation, and deliberately conservative. It assumes a
+      sealed batch clears at the <em>midpoint</em>; the batch that actually ran on-chain cleared
+      better than that — at the seller's reserve — which is why the measured trade above shows
+      392 bps where this would say 192. It also ignores market impact, which on a book this thin
+      is the larger cost of the two: see
+      <a href="#" onclick="document.querySelector('#exitpct').scrollIntoView({behavior:'smooth'});return false">the
+      depth numbers above</a>.</p>
   </div>
 </section>
 
@@ -499,6 +587,57 @@ const price=(v,p=2)=>{const u=10n**18n;return `${v/u}.${(v%u).toString().padStar
 const set=(id,html)=>{const n=document.getElementById(id);if(n)n.innerHTML=html};
 const link=(h,l)=>`<a href="${EXPLORER}/tx/${h}" target="_blank" rel="noreferrer">${l}</a>`;
 
+/* ── the calculator ───────────────────────────────────────────────────────
+   Arithmetic, not a simulation. The left column is what an ordinary on-chain
+   book genuinely publishes — the same fields our TransparentVenue.getOrder()
+   returns — rendered from whatever the visitor types. The right column is the
+   byte count of the ECIES envelope those same terms become, which is all the
+   chain would hold.
+─────────────────────────────────────────────────────────────────────────── */
+const usd=n=>n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const grp=n=>Math.round(n).toLocaleString("en-US");
+
+function recalc(){
+  const size =Math.max(0,+document.getElementById("cSize").value ||0);
+  const limit=Math.max(0,+document.getElementById("cLimit").value||0);
+  let   truep=Math.max(0,+document.getElementById("cTrue").value ||0);
+  // A reserve above the limit means no trade at all; clamp so the page keeps
+  // saying something true rather than showing a negative saving.
+  if(truep>limit) truep=limit;
+
+  // Transparent: they read the limit, so they ask for it.
+  const paidT=size*limit;
+  // Sealed: nothing to read, so the batch clears between the two.
+  const clear=(limit+truep)/2;
+  const paidN=size*clear;
+  const saved=paidT-paidN;
+  const bps  =paidN>0?(saved/paidN)*10000:0;
+
+  set("cLeak",
+    `<div><span class="k">${nbsp("trader ")}</span><span class="v">0xcb46cD10dE…</span></div>`+
+    `<div><span class="k">${nbsp("side   ")}</span><span class="v">BUY</span></div>`+
+    `<div><span class="k">${nbsp("limit  ")}</span><span class="v">${usd(limit)}</span></div>`+
+    `<div><span class="k">${nbsp("size   ")}</span><span class="v">${grp(size)} FXRP</span></div>`);
+  set("cSeal","0x04"+rand(160)+"…");
+
+  set("cTPrice",usd(limit));
+  set("cTPaid" ,`${usd(paidT)} USD`);
+  set("cNPrice",usd(clear));
+  set("cNPaid" ,`${usd(paidN)} USD`);
+  set("cSaved" ,saved>0?`$${grp(saved)}`:"$0");
+  set("cBps"   ,saved>0?`${Math.round(bps)} basis points on this trade`
+                       :"no difference — you named their price exactly");
+  set("cFee"   ,`$${grp(paidN*0.0005)}`);
+}
+
+function wireCalc(){
+  ["cSize","cLimit","cTrue"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener("input",recalc);
+  });
+  recalc();
+}
+
 /* ── the hero: an order being sealed ─────────────────────────────────── */
 const HEX="0123456789abcdef";
 const rand=n=>{let s="";for(let i=0;i<n;i++)s+=HEX[Math.random()*16|0];return s};
@@ -700,6 +839,7 @@ async function mainnet(){
   set("exitdepth",whole(exitDepth));
   set("exitpct",`${(Number(exitDepth*10000n/supply)/100).toFixed(2)}%`);
 }
+wireCalc();
 main();
 </script>
 </body>
