@@ -52,6 +52,14 @@ The config is rendered at startup from these rather than committed, because two
 of them are credentials. `deploy/railway/proxy-entrypoint.sh` is the whole of
 that logic and it is worth reading before you trust it.
 
+**Set `SIGNING_POLICY_OFFSET` wide enough.** A fresh proxy starts with only the
+last couple of signing policies, but TEE attestation is verified against the
+epoch the extension's governance was set in, which is usually older. Too narrow
+and registration 404s with `policy of the given reward epoch not in the
+storage` in the enclave log; too wide and the proxy hangs at `fetching initial
+TEE info` because the indexer no longer has those policies. We needed `5`.
+Widen one step at a time. Full write-up in `docs/field-notes.md` note 6.
+
 **Use Flare's shared indexer, not your own.** A self-hosted indexer on a public
 RPC drifts behind the chain head, and registration then fails in a way that
 looks like a Flare outage. See `docs/field-notes.md` note 1.
@@ -91,6 +99,11 @@ registration flow and the architecture are unchanged; the hardware attestation
 is not real, and the submission says so rather than implying otherwise.
 
 ---
+
+> **Restart order matters.** The proxy must be healthy and past
+> `initialized for policy N` before `extension-tee` starts. If the enclave boots
+> against a proxy that is still crash-looping it comes up with no policies at
+> all, and registration fails the same way for a different reason.
 
 ## 4 · Register this enclave, once
 

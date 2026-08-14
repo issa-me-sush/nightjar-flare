@@ -1,6 +1,6 @@
 # Field notes: getting an FCC extension working on Coston2
 
-Six things cost real time. All are now fixed, and none of them are
+Seven things cost real time. All are now fixed, and none of them are
 documented in an obvious place, so they are written up here.
 
 ## 1. A stale indexer silently breaks TEE registration
@@ -169,7 +169,49 @@ they are free and this whole class of failure disappears. And if you cannot,
 re-register immediately after any tunnel restart rather than discovering it
 when a demo hangs.
 
-## 6. Two smaller ones
+## 6. A fresh proxy does not have enough signing-policy history to register
+
+**Symptom.** Everything looks right on a brand-new host. The proxy is up,
+`/info` returns a real `teeInfo`, the policy-consistency preflight passes, the
+availability check is dispatched, and then the result 404s forever. The enclave
+log is the only place that says why:
+
+```
+main queue: processing action 0x… error: policy of the given reward epoch not in the storage
+```
+
+**Cause.** `initial_signing_policy_offset` decides how far back the proxy loads
+signing policies when it starts. On a machine that has been running a while
+this never bites, because it has accumulated history. A fresh deployment has
+only the last couple of epochs — and TEE attestation is verified against the
+epoch in which the *extension's governance* was set, which may be several
+epochs older. The enclave cannot verify what it cannot see.
+
+**Fix.** Set the offset far enough back to cover the extension's governance
+epoch, and restart the proxy and then the enclave, in that order.
+
+```bash
+# how far back do you need? compare
+cast call 0xA90Db6D10F856799b10ef2A77EBCbF460aC71e52 \
+  "getCurrentRewardEpochId()(uint32)" --rpc-url "$CHAIN_URL"     # now
+curl -s "$EXT_PROXY_URL/info" | jq .teeInfo.initialSigningPolicyId  # what the enclave has
+```
+
+Ours needed to reach back five epochs: the extension was registered at 5936 and
+a freshly started proxy began at 5938. Offset 5 covered it and registration
+succeeded on the next attempt.
+
+**Do not overshoot.** Too large an offset asks the indexer for policies outside
+its retention and the proxy hangs on startup at `fetching initial TEE info`,
+never reaching `serving external`. Six was already too many for us. Widen it
+one step at a time.
+
+**Order matters on a restart.** The proxy has to be healthy and past
+`initialized for policy N` before the enclave starts, or the enclave comes up
+with no policies at all and you are back to the same 404 for a different
+reason.
+
+## 7. Two smaller ones
 
 **A rotated tunnel URL lives in more than one file.** `.env`
 (`EXT_PROXY_URL`), `frontend/.env.local`, and the on-chain registration above.
