@@ -1,45 +1,31 @@
 # Nightjar
 
-**A sealed-bid venue for FXRP, matched inside a Flare TEE and settled on Flare.**
+**A sealed-bid venue for FXRP. Your order stays unreadable until it is matched.**
 
-Put a large order on any public book and you have announced it. Your price and
-your size are readable before you trade, and you get a worse fill. Nightjar
-keeps your order encrypted until the moment it is matched, so size can rest
-on-chain without telling anyone what it wants.
-
-Built for Flare Summer Signal on Flare Confidential Compute. Targets **Bounty 2
-— Confidential Compute Apps** and **Bounty 1 — Interoperable Asset Products**.
-
-### For judges — verify the claims in about two minutes, no wallet
+Rest a large order on any public book and you have announced it. Your price and
+your size can be read before you trade, so you get a worse fill. Nightjar
+encrypts the order in your browser and opens it only inside a Flare
+Confidential Compute enclave. Orders that do not match are destroyed there and
+never revealed.
 
 | | |
 |---|---|
-| **The app** | <https://nightjarflare.vercel.app/> · [trade](https://nightjarflare.vercel.app/trade) · [depth](https://nightjarflare.vercel.app/depth) · [proof](https://nightjarflare.vercel.app/proof) |
-| **No-wallet page, nothing to install** | <https://issa-me-sush.github.io/nightjar-flare/> |
-| **The harm, measured** | `cd tools && go run ./cmd/run-comparison` — deploys nothing, replays the control experiment |
-| **The ecosystem problem, measured** | `cd tools && go run ./cmd/fxrp-depth` — reads **Flare mainnet**, no key needed |
-| **Settled batch on Coston2** | [`0x083d86d7…`](https://coston2-explorer.flare.network/tx/0x083d86d734cb021fc58b6225d4fe5f4964f65ed0c1c20990f8eb22dd5cfb2c6d) |
-| **A batch where 3 of 5 orders were never revealed** | [`0xa37aee2f…`](https://coston2-explorer.flare.network/tx/0xa37aee2f156bc18bf5cd2699c15b25e7ff12d277b8d6730f6232f8364aab35f2) |
-| **The XRPL rail, live** | 25 XRP paid on XRPL → [credited on Flare](https://coston2-explorer.flare.network/tx/0x64ba0a3d04258acc89c809046148a350ffb47a29d7716709cb2f0a6e0d864f12) via an FDC proof |
-| **Tests** | `forge test` (51) · `cd go && go test ./...` (26) |
+| App | <https://nightjarflare.vercel.app> · [trade](https://nightjarflare.vercel.app/trade) · [depth](https://nightjarflare.vercel.app/depth) · [proof](https://nightjarflare.vercel.app/proof) |
+| No wallet needed | <https://issa-me-sush.github.io/nightjar-flare/> |
+| Network | Flare Coston2. Venue, control venue and gateway all verified |
+| Tests | 51 Solidity, 26 Go |
 
-Everything below that is a number can be re-derived by running one of those.
-Nothing here asks you to take our word for it.
+Every number below can be re-derived from a command in this repo or a
+transaction on Coston2.
 
-**Two minutes, in this order.** Open
-[nightjarflare.vercel.app/depth](https://nightjarflare.vercel.app/depth) and
-watch it read Flare mainnet: 149.6M FXRP outstanding against roughly $1.2M of
-stablecoin to sell into. Then
-[/proof](https://nightjarflare.vercel.app/proof), which reads Coston2 and
-shows the same trade on a transparent book and on this one, and the batch
-where five orders went in and three were never revealed. Neither page needs a
-wallet, and neither needs anything of ours to be running.
+```bash
+cd tools
+go run ./cmd/fxrp-depth        # the market problem, read off Flare mainnet
+go run ./cmd/run-comparison    # what a public book costs, measured
+```
 
-If you want to place an order yourself you need a Coston2 wallet and the live
-enclave, which runs on a small host and may be down. The recorded demo and the
-transactions above are the canonical evidence; please do not read a sleeping
-enclave as a broken project.
-
+`/depth` and `/proof` read the chains directly and need nothing of ours
+running. Placing an order needs a Coston2 wallet and the live enclave.
 
 ---
 
@@ -68,7 +54,7 @@ What a seller can trade into
 the other side.** Roughly one part in a hundred. If one holder in a hundred
 wanted out at once there is no price at which they all get out.
 
-Three things worth sitting with:
+Three things follow from that:
 
 - **84% of the float is parked, not quoted.** It is deposited in vaults and
   lending markets earning yield. That is capital present on Flare and absent
@@ -125,8 +111,7 @@ asserted.
 
 ## Why a batch auction, and not an order book
 
-This is the design decision the whole system turns on, and it is the one thing
-here that is genuinely novel rather than merely well-built.
+This is the decision the rest of the system rests on.
 
 The obvious way to build a confidential venue is to put a normal
 price-time-priority order book inside an enclave. Flare's own reference
@@ -197,12 +182,10 @@ deployed venue and take it to k-of-n without a redeploy.
 
 ---
 
-## Bounty 2 — the four questions, answered directly
+## What is sealed, what is checked, and what you trust
 
-The bounty asks submissions to explain what runs privately inside the TEE, what
-is verified or consumed on-chain, what trust assumptions exist, and why the
-product benefits from confidential compute rather than normal smart-contract
-execution. Taking those in order.
+Four questions worth answering plainly, because they are the ones that decide
+whether any of this is worth using.
 
 ### What runs privately inside the TEE
 
@@ -297,7 +280,7 @@ venue needs.
 
 ---
 
-## Bounty 1 — arrive from the XRP Ledger, trade without showing your hand
+## Arriving from the XRP Ledger
 
 FXRP's problem is no longer minting; v1.3 fixed that. Its problem is that once
 minted there is nowhere to go with size — and the measurement at the top of
@@ -561,6 +544,15 @@ volume, fee, order count. Not a convenience: the public Coston2 RPC caps
 `eth_getLogs` at **30 blocks**, so a venue whose history lives only in events is
 effectively unreadable from a browser. What is recorded is batch-level
 aggregate only; there is no per-order slot to read.
+
+## Flare Summer Signal
+
+Submitted to both tracks. **Confidential Compute Apps** is the primary one: the
+sealed book, the enclave, and the quorum design are the substance of it, and
+the four questions that track asks are answered under *What is sealed, what is
+checked, and what you trust* above. **Interoperable Asset Products** is the XRP
+Ledger rail, where a Data Connector proof of an XRPL payment funds a Flare
+balance directly.
 
 ## What was built during the program, and what was not
 
