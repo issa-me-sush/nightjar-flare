@@ -149,6 +149,21 @@ Confirm only the live one remains:
 cd tools && go run ./cmd/query-tee -ext 66250 -reg 0x1a9C4A0f9D76c0b1D91d22E24E573a9b377618aE
 ```
 
+## 4b · When it drifts later
+
+A container restart mints a new machine identity and the venue stops accepting
+it. Nothing errors: batches simply hang while the enclave logs look healthy.
+
+```bash
+./scripts/heal-enclave.sh --check    # exit 1 if the venue and the enclave disagree
+./scripts/heal-enclave.sh            # register, addTee, retire the stale machines
+```
+
+It derives the running identity from the proxy's published public key rather
+than any local state, so it is safe to run on a timer. Repair depends on
+Flare's FTDC availability check working; when that returns 404 the script says
+so and exits, and re-running later is harmless.
+
 ## 5 · Verify end to end
 
 ```bash
