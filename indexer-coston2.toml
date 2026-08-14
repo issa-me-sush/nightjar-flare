@@ -1,0 +1,35 @@
+[indexer]
+mode = "fsp"
+start_index = 0
+stop_index = 0
+history_epochs = 0
+rpc_concurrency = 20
+batch_size = 200
+log_range = 30
+new_block_check_millis = 1000
+confirmations = 1
+no_new_blocks_delay_warning = 120
+
+[logger]
+level = "INFO"
+file = "./logs/flare-cchain-indexer.log"
+console = true
+
+[chain]
+node_url = "https://coston2-api.flare.network/ext/C/rpc"
+api_key = ""
+chain_type = 1
+
+[db]
+host = "localhost"
+port = 3306
+database = "flare_ftso_indexer"
+username = "root"
+password = "root"
+log_queries = false
+drop_table_at_start = false
+history_drop = 0
+
+[timeout]
+backoff_max_elapsed_time_seconds = 300
+rpc_timeout_millis = 20000
