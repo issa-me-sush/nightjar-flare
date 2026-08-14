@@ -75,3 +75,4 @@ config/deploy.log
 # other builders and is worth publishing.
 docs/outreach.md
 docs/demo-script.md
+docs/thesis.md
